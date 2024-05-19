@@ -10,12 +10,19 @@ OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
 OPTIONS_MANAGE = ['启动服务器']
+HSL_VERSION = 2
 class Main:
     def __init__(self):
         global Config, Workspace
         self.Config = Config()
         self.Workspace = Workspace()
         self.source = getSource()
+        try:
+            isOutdated, new = utils.hsl.checkUpdate(HSL_VERSION)
+            if isOutdated:
+                print(f'发现新版本，版本号：{new}，建议及时更新')
+        except:
+            pass
     async def welcome(self):
         print('----- HSL -----')
         print('欢迎使用 Hikari Server Launcher.')
