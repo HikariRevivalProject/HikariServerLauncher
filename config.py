@@ -8,7 +8,7 @@ class Config:
         self.config['first_run'] = True
         self.config['use_bmclapi'] = False
         self.config['workspace'] = 'workspace'
-        self.config['config'] = 'config'
+        self.config['config'] = 'hsl-config'
         self.config['config_file'] = 'config.json'
         self.config['workspace_file'] = 'workspace.json'
         self.config['config_path'] = os.path.join(self.config['config'], self.config['config_file'])
@@ -28,5 +28,3 @@ class Config:
     def load_config(self):
         with open(self.config['config_path'], 'r') as f:
             self.config = json.load(f)
-    def get_config(self):
-        return self.config

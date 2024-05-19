@@ -1,5 +1,4 @@
 import requests
-from tqdm import tqdm
 from utils.download import downloadFile
 async def get_versions(source,use_bmclapi=False):
     sources = source["mc"]["vanilla"]['list']

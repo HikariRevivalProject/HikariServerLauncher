@@ -1,4 +1,5 @@
 import subprocess
+import logging
 class Server:
     def __init__(self,name,path,run_command):
         self.name = name

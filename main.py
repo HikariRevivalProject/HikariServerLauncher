@@ -1,23 +1,21 @@
-from sys import version
 from prompt import promptSelect, promptInput, promptConfirm
+from source import getSource
 from config import Config
 from workspace import Workspace
 from server import Server
 import asyncio
 import utils
 import os
-import json
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric']
-OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器']
+OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
 OPTIONS_MANAGE = ['启动服务器']
 class Main:
     def __init__(self):
         global Config, Workspace
         self.Config = Config()
         self.Workspace = Workspace()
-        with open('source.json','r') as f:
-            self.source = json.load(f)
+        self.source = getSource()
     async def welcome(self):
         print('----- HSL -----')
         print('欢迎使用 Hikari Server Launcher.')
@@ -36,7 +34,7 @@ class Main:
 
     async def create(self):
         serverName = await promptInput('请输入服务器名称:')
-        for server in self.Workspace.get():
+        for server in self.Workspace.workspaces:
             if server['name'] == serverName:
                 print('服务器已存在。')
                 return Server(serverName,server['path'],server['run_command'])
@@ -46,33 +44,29 @@ class Main:
     async def install(self,Server:Server):
         gameType = await promptSelect(OPTIONS_GAMETYPE,'请选择服务器类型:')
         if gameType == 0:
+            #vanilla
+            #version selection
             mcVersions = await utils.vanilla.get_versions(self.source)
             mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release']
             index = await promptSelect(mcVersions,'请选择Minecraft服务器版本:')
             mcVersion = mcVersions[index]
-            javaVersion = await utils.java.getJavaVersion(mcVersion)
-            javaPath = os.path.join(self.Workspace.path,'java',javaVersion)
-            if not await utils.java.checkJavaExist(javaVersion):
-                print(f'Java版本 {javaVersion} 不存在。正在下载Java...')
-                await utils.java.getJava(javaVersion,self.source)
+            #check(download) java
+            javaPath = await utils.java.getJava(mcVersion,self.source)
             print('正在下载Vanilla 服务端: ' + mcVersion)
+            #download vanilla server
             await utils.vanilla.downloadServer(self.source,mcVersion,os.path.join(Server.path,'server.jar'))
             print('Vanilla 服务端下载完成。')
-            #get os type
-            if os.name == 'nt':
-                java_exec = 'java.exe'
-            if os.name == 'posix':
-                java_exec = 'java'
-            for i in range(len(self.Workspace.get())):
-                if self.Workspace.get()[i]['name'] == Server.name:
-                    self.Workspace.workspaces[i]['run_command'] = f'{os.path.join(javaPath,'bin',java_exec)} -jar server.jar'
+            #find and save run command
+            for i in range(len(self.Workspace.workspaces)):
+                if self.Workspace.workspaces[i]['name'] == Server.name:
+                    self.Workspace.workspaces[i]['run_command'] = f'{javaPath} -jar server.jar'
                     self.Workspace.save()
                     break
         else:
             raise NotImplementedError('哥们还没写到这块...')
         await self.mainMenu()
     async def manage(self):
-        workspaces = self.Workspace.get()
+        workspaces = self.Workspace.workspaces
         if not workspaces:
             await self.create()
         print('----- 服务器管理 -----')
@@ -87,7 +81,10 @@ class Main:
             server.run()
     async def delete(self):
         print('----- 服务器删除 -----')
-        index = await promptSelect([x['name'] for x in self.Workspace.get()],'请选择要删除的服务器:')
+        if not self.Workspace.workspaces:
+            print('没有服务器。')
+            await self.mainMenu()
+        index = await promptSelect([x['name'] for x in self.Workspace.workspaces],'请选择要删除的服务器:')
         if await promptConfirm('确定要删除吗?'):
             self.Workspace.delete(index)
         await self.mainMenu()
@@ -100,11 +97,15 @@ class Main:
             await self.mainMenu()
         elif choice == 1:
             await self.manage()
-        else:
+        elif choice == 2:
             await self.delete()
+        elif choice == 3:
+            exit(0)
+        else:
+            raise NotImplementedError('你怎么会选择到这里呢？')
 async def main():
     MainProgram = Main()
-    if MainProgram.Config.get_config()['first_run']:
+    if MainProgram.Config.config['first_run']:
         await MainProgram.welcome()
     else:
         await MainProgram.mainMenu()

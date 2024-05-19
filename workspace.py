@@ -6,7 +6,7 @@ from server import Server
 class Workspace:
     global Server, Config
     def __init__(self):
-        self.config = Config().get_config()
+        self.config = Config().config
         self.workspaces = []
         self.path = self.config["workspace"]
         self.file_path = self.config["workspace_path"]
@@ -24,8 +24,6 @@ class Workspace:
     def load(self):
         with open(self.file_path, 'r') as f:
             self.workspaces = json.load(f)
-    def get(self):
-        return self.workspaces
     def create(self,Server: Server):
         self.workspaces.append({"name":Server.name,"path":Server.path,"run_command":Server.run_command})
         if not os.path.exists(Server.path):

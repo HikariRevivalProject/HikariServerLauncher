@@ -7,6 +7,12 @@ from utils.download import downloadFile
 
 Config = Config()
 Workspace = Workspace()
+if os.name == 'nt':
+    JAVA_EXEC = 'java.exe'
+elif os.name == 'posix':
+    JAVA_EXEC = 'java'
+else:
+    raise Exception('Unsupported OS')
 async def getJavaVersion(mcVersion):
     parts = mcVersion.split('.')
     version = int(parts[1])
@@ -23,40 +29,33 @@ async def getJavaVersion(mcVersion):
     else:
         return '0'
 async def checkJavaExist(javaVersion):
-    if not os.path.exists(os.path.join(Workspace.path,'java',javaVersion)):
+    if not os.path.exists(os.path.join(Workspace.path,'java',javaVersion,'bin',JAVA_EXEC)):
         return False
     return True
-async def getJava(javaVersion,source):
+async def downloadJava(javaVersion,source):
     sources = source['java']['list']
-    url = ''
     path = os.path.join(Workspace.path,'java',javaVersion)
     filename = os.path.join(path,'java.zip')
+    #make dir
     if not os.path.exists(path):
         os.makedirs(path)
+    #get source
     for i in sources:
         if os.name == 'nt':
             url = i['windows'][javaVersion]
         if os.name == 'posix':
             url = i['linux'][javaVersion]
         if downloadFile(url,filename):
+            #if downloaded successfully break
             break
+    #unzip java.zip
     with zipfile.ZipFile(filename,'r') as file:
-        for member in file.namelist():
-            is_directory = member.endswith('/')
-            full_output_path = os.path.join(path, member[:-1] if is_directory else member)
-            os.makedirs(full_output_path, exist_ok=True) if is_directory else None
-            if not is_directory:
-                file.extract(member, path)
+        file.extractall(path)
     os.remove(filename)
-    subdirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
-    
-    if len(subdirs) == 1:
-        subdir_path = os.path.join(path, subdirs[0])
-        for item in os.listdir(subdir_path):
-            src = os.path.join(subdir_path, item)
-            dst = os.path.join(path, item)
-            if os.path.isfile(src):
-                shutil.move(src, dst)
-            elif os.path.isdir(src):
-                shutil.move(src, dst)
-        os.rmdir(subdir_path)
+async def getJava(mcVersion,source):
+    javaVersion = await getJavaVersion(mcVersion)
+    javaPath = os.path.join(Workspace.path,'java',javaVersion)
+    if not await checkJavaExist(javaVersion):
+        print(f'Java版本 {javaVersion} 不存在。正在下载Java...')
+        await downloadJava(javaVersion,source)
+    return os.path.join(javaPath,'bin',JAVA_EXEC)

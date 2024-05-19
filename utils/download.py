@@ -17,13 +17,13 @@ def downloadFile(url, save_path):
             
             progressBar.close()
             if total_size != 0 and progressBar.n != total_size:
-                print("\n下载不完整 请检查网络")
+                print("\n下载不完整 请检查网络（重新下载请删除服务器后重新安装）")
                 return False
             else:
                 print("\n下载完成!")
             return True
         else:
-            print(f"无法下载 HTTP 状态码: {response.status_code}")
+            print(f"无法下载 HTTP 状态码: {response.status_code} （重新下载请删除服务器后重新安装）")
             return False
     except Exception as e:
         print(f"出现错误: {e}")
