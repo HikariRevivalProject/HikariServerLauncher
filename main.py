@@ -7,10 +7,10 @@ import asyncio
 import utils
 import os
 OPTIONS_YN = ['是', '否']
-OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric']
+OPTIONS_GAMETYPE = ['原版','Paper(1.20.4)','Forge','Fabric']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
 OPTIONS_MANAGE = ['启动服务器']
-HSL_VERSION = 2
+HSL_VERSION = 3
 class Main:
     def __init__(self):
         global Config, Workspace
@@ -49,19 +49,23 @@ class Main:
         print('服务器已创建。')
         await self.install(Server(serverName,os.path.join(self.Workspace.path,serverName),''))
     async def install(self,Server:Server):
+        vanilla = utils.vanilla
+        paper = utils.paper
+        java = utils.java
+        serverJarPath = os.path.join(Server.path,'server.jar')
         gameType = await promptSelect(OPTIONS_GAMETYPE,'请选择服务器类型:')
         if gameType == 0:
             #vanilla
             #version selection
-            mcVersions = await utils.vanilla.get_versions(self.source)
+            mcVersions = await vanilla.get_versions(self.source)
             mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release']
             index = await promptSelect(mcVersions,'请选择Minecraft服务器版本:')
             mcVersion = mcVersions[index]
             #check(download) java
-            javaPath = await utils.java.getJava(mcVersion,self.source)
+            javaPath = await java.getJava(mcVersion,self.source)
             print('正在下载Vanilla 服务端: ' + mcVersion)
             #download vanilla server
-            await utils.vanilla.downloadServer(self.source,mcVersion,os.path.join(Server.path,'server.jar'))
+            await vanilla.downloadServer(self.source,mcVersion,serverJarPath)
             print('Vanilla 服务端下载完成。')
             #find and save run command
             for i in range(len(self.Workspace.workspaces)):
@@ -69,6 +73,19 @@ class Main:
                     self.Workspace.workspaces[i]['run_command'] = f'{javaPath} -jar server.jar'
                     self.Workspace.save()
                     break
+        elif gameType == 1:
+            #paper
+            #paper version 1.20.4
+            mcVersion = '1.20.4'
+            javaPath = await java.getJava(mcVersion,self.source)
+            await paper.downloadLatest(self.source,serverJarPath)
+            print('Paper 服务端下载完成。')
+            for i in range(len(self.Workspace.workspaces)):
+                if self.Workspace.workspaces[i]['name'] == Server.name:
+                    self.Workspace.workspaces[i]['run_command'] = f'{javaPath} -jar server.jar'
+                    self.Workspace.save()
+                    break
+            pass
         else:
             raise NotImplementedError('哥们还没写到这块...')
         await self.mainMenu()

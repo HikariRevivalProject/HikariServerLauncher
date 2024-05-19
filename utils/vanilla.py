@@ -21,6 +21,6 @@ async def downloadServer(source,gameVersion,path,use_bmclapi=False):
     for source in sources:
         if source['type'] == 'bmclapi':
             if downloadFile(source['server'].replace('{version}',gameVersion),path):
-                return True
+                return
             else:
                 pass
