@@ -1,10 +1,16 @@
 import subprocess
-import logging
-class Server:
-    def __init__(self,name,path,run_command):
-        self.name = name
-        self.path = path
-        self.run_command = run_command
+from hsl import HSL
+class Server(HSL):
+    def __init__(self,*,name: str,type: str,path: str,javaVersion: str,maxRam: str):
+        super().__init__()
+        self.name = name #name
+        self.type = type
+        self.path = path #path
+        self.javaVersion = javaVersion #6 8 11 16 17 21
+        self.maxRam = maxRam #in MB
+
     def run(self):
-        run_command = self.run_command.split(" ")
-        subprocess.Popen(run_command,cwd=self.path)
+        javaPath = self.Java.getJavaByJavaVersion(self.javaVersion)
+        if self.type == 'vanilla':
+            run_command = f'{javaPath} -Xmx{self.maxRam} -jar server.jar nogui'
+        subprocess.Popen(run_command.split(" "),cwd=self.path)

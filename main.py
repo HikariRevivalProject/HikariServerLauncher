@@ -1,24 +1,28 @@
-from prompt import promptSelect, promptInput, promptConfirm
-from source import getSource
-from config import Config
-from workspace import Workspace
-from server import Server
 import asyncio
-import utils
 import os
+import re
+
+from prompt import promptSelect, promptInput, promptConfirm
+from utils import vanilla, paper, forge, fabric, osfunc
+from hsl import HSL, Server, Workspace, Java
+from config import Config
+
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper(1.20.4)','Forge','Fabric']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
 OPTIONS_MANAGE = ['启动服务器']
-HSL_VERSION = 3
-class Main:
+
+MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
+HSL_VERSION = 4
+OS_MAXRAM = osfunc.getOSMaxRam()
+class Main(HSL):
     def __init__(self):
-        global Config, Workspace
+        super().__init__()
         self.Config = Config()
         self.Workspace = Workspace()
-        self.source = getSource()
+        self.Java = Java()
         try:
-            isOutdated, new = utils.hsl.checkUpdate(HSL_VERSION)
+            isOutdated, new = self.check_update(HSL_VERSION)
             if isOutdated:
                 print(f'发现新版本，版本号：{new}，建议及时更新')
         except:
@@ -40,52 +44,75 @@ class Main:
         await self.create()
 
     async def create(self):
-        serverName = await promptInput('请输入服务器名称:')
-        for server in self.Workspace.workspaces:
-            if server['name'] == serverName:
+        serverName: str = await promptInput('请输入服务器名称:')
+        while (not serverName.strip()) or serverName in ['con','aux','nul','prn']:
+            serverName = await promptInput('名称非法，请重新输入:')
+        servers = self.Workspace.workspaces
+        for i in range(len(servers)):
+            if servers[i]['name'] == serverName:
                 print('服务器已存在。')
-                return Server(serverName,server['path'],server['run_command'])
-        self.Workspace.create(Server(serverName,os.path.join(self.Workspace.path,serverName),''))
-        print('服务器已创建。')
-        await self.install(Server(serverName,os.path.join(self.Workspace.path,serverName),''))
-    async def install(self,Server:Server):
-        vanilla = utils.vanilla
-        paper = utils.paper
-        java = utils.java
-        serverJarPath = os.path.join(Server.path,'server.jar')
+                return self.Workspace.get(index=i)
+        print('服务器不存在，进入安装阶段。')
+        serverPath = await self.Workspace.create(server_name=serverName)
+        Server = await self.install(
+            serverName=serverName,
+            serverPath=serverPath
+        )
+        await self.Workspace.add(Server)
+    async def install(self,*,serverName: str,serverPath: str):
+        serverJarPath = os.path.join(serverPath,'server.jar')
         gameType = await promptSelect(OPTIONS_GAMETYPE,'请选择服务器类型:')
         if gameType == 0:
             #vanilla
             #version selection
+            serverType = 'vanilla'
             mcVersions = await vanilla.get_versions(self.source)
             mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release']
             index = await promptSelect(mcVersions,'请选择Minecraft服务器版本:')
             mcVersion = mcVersions[index]
-            #check(download) java
-            javaPath = await java.getJava(mcVersion,self.source)
-            print('正在下载Vanilla 服务端: ' + mcVersion)
+            #check java
+            javaVersion, javaPath = await self.Java.getJavaByGameVersion(mcVersion)
+            print(f'正在下载Vanilla 服务端: {mcVersion}')
             #download vanilla server
-            await vanilla.downloadServer(self.source,mcVersion,serverJarPath)
+            status = await vanilla.downloadServer(self.source,mcVersion,serverJarPath)
+            if not status:
+                print('Vanilla 服务端下载失败。')
+                return
             print('Vanilla 服务端下载完成。')
-            #find and save run command
-            for i in range(len(self.Workspace.workspaces)):
-                if self.Workspace.workspaces[i]['name'] == Server.name:
-                    self.Workspace.workspaces[i]['run_command'] = f'{javaPath} -jar server.jar'
-                    self.Workspace.save()
-                    break
+            maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
+            #check regex
+            while not MAXRAM_PATTERN.match(maxRam):
+                maxRam = await promptInput('输入错误，请重新输入:')
+            return Server(
+                name=serverName,
+                type=serverType,
+                path=serverPath,
+                javaVersion=javaVersion,
+                maxRam=maxRam
+            )
+
         elif gameType == 1:
-            #paper
+            #papers
             #paper version 1.20.4
+            serverType = 'paper'
             mcVersion = '1.20.4'
-            javaPath = await java.getJava(mcVersion,self.source)
-            await paper.downloadLatest(self.source,serverJarPath)
+            javaVersion = await self.Java.getJavaVersion(mcVersion)
+            status = await paper.downloadLatest(self.source,serverJarPath)
+            if not status:
+                print('Paper 服务端下载失败。')
+                return
             print('Paper 服务端下载完成。')
-            for i in range(len(self.Workspace.workspaces)):
-                if self.Workspace.workspaces[i]['name'] == Server.name:
-                    self.Workspace.workspaces[i]['run_command'] = f'{javaPath} -jar server.jar'
-                    self.Workspace.save()
-                    break
-            pass
+            maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
+            #check regex
+            while not MAXRAM_PATTERN.match(maxRam):
+                maxRam = await promptInput('输入错误，请重新输入:')
+            return Server(
+                name = serverName,
+                type = serverType,
+                path=serverPath,
+                javaVersion=javaVersion,
+                maxRam = maxRam
+            )
         else:
             raise NotImplementedError('哥们还没写到这块...')
         await self.mainMenu()
@@ -95,14 +122,11 @@ class Main:
             await self.create()
         print('----- 服务器管理 -----')
         index = await promptSelect([x['name'] for x in workspaces],'选择服务器:')
-        server = workspaces[index]['name']
-        choice = await promptSelect(OPTIONS_MANAGE,f'{server} - 请选择操作:')
+        serverName = workspaces[index]['name']
+        choice = await promptSelect(OPTIONS_MANAGE,f'{serverName} - 请选择操作:')
         if choice == 0:
-            name = workspaces[index]['name']
-            path = workspaces[index]['path']
-            run_command = workspaces[index]['run_command']
-            server = Server(name,path,run_command)
-            server.run()
+            Server = await self.Workspace.get(index)
+            await Server.run()
     async def delete(self):
         print('----- 服务器删除 -----')
         if not self.Workspace.workspaces:
@@ -110,7 +134,7 @@ class Main:
             await self.mainMenu()
         index = await promptSelect([x['name'] for x in self.Workspace.workspaces],'请选择要删除的服务器:')
         if await promptConfirm('确定要删除吗?'):
-            self.Workspace.delete(index)
+            await self.Workspace.delete(index)
         await self.mainMenu()
     async def mainMenu(self):
         print('----- HSL -----')
