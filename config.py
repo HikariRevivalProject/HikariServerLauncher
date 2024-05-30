@@ -6,7 +6,7 @@ class Config:
     def __init__(self):
         self.config = {}
         self.config['first_run'] = True
-        self.config['use_bmclapi'] = False
+        self.config['use_mirror'] = False
         self.config['workspace'] = 'workspace'
         self.config['config'] = 'hsl-config'
         self.config['config_file'] = 'config.json'

@@ -6,3 +6,6 @@ async def downloadLatest(source,path) -> bool:
             if downloadFile(source['latest'],path):
                 return True
     return False
+async def getLatestVersionName(source) -> str:
+    return source["mc"]["paper"]['latestVersionName']
+    

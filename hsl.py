@@ -14,27 +14,36 @@ if os.name == 'nt':
 elif os.name == 'posix':
     JAVA_EXEC = 'java'
 
-VERSION = r'http://hsl.hikari.bond/hsl.json'
-DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
-class HSL:
-    def __init__(self):
-        self.source = self.get_source()
-    def check_update(self,version: int) -> tuple:
-        r = requests.get(VERSION)
-        if r.status_code == 200:
-            latest: int = r.json()['version']
-            if version < latest:
-                return True, latest
-            else:
-                return False, version
+def check_update(version: int) -> tuple:
+    r = requests.get(VERSION)
+    if r.status_code == 200:
+        latest: int = r.json()['version']
+        if version < latest:
+            return True, latest
         else:
             return False, version
-    def get_source(self) -> dict:
-        r = requests.get(DOWNLOAD_SOURCE)
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return {}
+    else:
+        return False, version
+def get_source() -> dict:
+    r = requests.get(DOWNLOAD_SOURCE)
+    if r.status_code == 200:
+        return r.json()
+    else:
+        return {}
+HSL_VERSION = 5
+DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
+VERSION = r'http://hsl.hikari.bond/hsl.json'
+
+SOURCE = get_source()
+NEWVERSION_INFO = check_update(HSL_VERSION)
+
+
+
+class HSL:
+    def __init__(self):
+        self.source = SOURCE
+        self.version = 4
+        self.newVersionInfo = NEWVERSION_INFO
 
 class Workspace(HSL):
     def __init__(self):
@@ -127,11 +136,13 @@ class Java(HSL):
         else:
             return '0'
     async def checkJavaExist(self,javaVersion) -> bool:
-        if not os.path.exists(os.path.join(Workspace().path,'java',javaVersion,'bin',JAVA_EXEC)):
+        if not os.path.exists(os.path.join(Workspace().path,'java',javaVersion,'bin')):
             return False
         return True
     async def downloadJava(self,javaVersion):
         sources = self.source['java']['list']
+        if Config().config['use_mirror']:
+            sources = sources[::-1]
         path = os.path.join(Workspace().path,'java',javaVersion)
         filename = os.path.join(path,'java.zip')
         #make dir
@@ -151,13 +162,11 @@ class Java(HSL):
         os.remove(filename)
     async def getJavaByGameVersion(self,mcVersion: str):
         javaVersion = await self.getJavaVersion(mcVersion)
-        javaPath = os.path.join(Workspace().path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion):
             print(f'Java版本 {javaVersion} 不存在。正在下载Java...')
             await self.downloadJava(javaVersion)
         return (
-            javaVersion,
-            os.path.join(javaPath,'bin',JAVA_EXEC)
+            javaVersion
             )
     async def getJavaByJavaVersion(self,javaVersion) -> str:
         javaPath = os.path.join(Workspace().path,'java',javaVersion)
