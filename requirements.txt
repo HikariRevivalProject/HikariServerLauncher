@@ -1,0 +1,3 @@
+tkintertools==3.0.0b1
+requests
+tqdm

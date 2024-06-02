@@ -1,4 +1,5 @@
 import asyncio
+from http import server
 import os
 import re
 from turtle import filling
@@ -21,8 +22,11 @@ import tkintertools.three as three
 
 from prompt import promptSelect, promptInput, promptConfirm
 from utils import vanilla, paper, forge, fabric, osfunc
-from hsl import HSL, Server, Workspace, Java
+from hsl import HSL
+from server import Server
 from config import Config
+from workspace import Workspace
+from java import Java
 
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric']
@@ -90,6 +94,7 @@ class Main(HSL):
         await self.mainMenu()
 
     async def create(self):
+        global Server
         serverName: str = await promptInput('请输入服务器名称:')
         while (not serverName.strip()) or serverName in ['con','aux','nul','prn']:
             serverName = await promptInput('名称非法，请重新输入:')
@@ -97,12 +102,27 @@ class Main(HSL):
         for i in range(len(servers)):
             if servers[i]['name'] == serverName:
                 print('服务器已存在。')
-                return self.Workspace.get(index=i)
+                return
         print('服务器不存在，进入安装阶段。')
         serverPath = await self.Workspace.create(server_name=serverName)
-        Server = await self.install(
+        server_setting = await self.install(
             serverName=serverName,
             serverPath=serverPath
+        )
+        if isinstance(server_setting,bool):
+            print('安装失败。')
+            return
+        serverName, serverType, serverPath, javaPath = server_setting
+        maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
+            #check regex
+        while not MAXRAM_PATTERN.match(maxRam):
+            maxRam = await promptInput('输入错误，请重新输入:')
+        Server = Server(
+            name=serverName,
+            type=serverType,
+            path=serverPath,
+            javaPath=javaPath,
+            maxRam=maxRam
         )
         await self.Workspace.add(Server)
     async def install(self,*,serverName: str,serverPath: str):
@@ -117,38 +137,29 @@ class Main(HSL):
             index = await promptSelect(mcVersions,'请选择Minecraft服务器版本:')
             mcVersion = mcVersions[index]
             #check java
-            javaVersion = await self.Java.getJavaByGameVersion(mcVersion)
+            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
             print(f'正在下载Vanilla 服务端: {mcVersion}')
             #download vanilla server
             status = await vanilla.downloadServer(self.source,mcVersion,serverJarPath,self.Config.config['use_mirror'])
             if not status:
                 print('Vanilla 服务端下载失败。')
-                return
+                return False
             print('Vanilla 服务端下载完成。')
 
         elif gameType == 1:
             #papers
             serverType = 'paper'
             mcVersion = await paper.getLatestVersionName(self.source)
-            javaVersion = await self.Java.getJavaByGameVersion(mcVersion)
+            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
             status = await paper.downloadLatest(self.source,serverJarPath)
             if not status:
                 print('Paper 服务端下载失败。')
-                return
+                return False
             print('Paper 服务端下载完成。')
         else:
             raise NotImplementedError('哥们还没写到这块...')
-        maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
-            #check regex
-        while not MAXRAM_PATTERN.match(maxRam):
-            maxRam = await promptInput('输入错误，请重新输入:')
-        return Server(
-                name=serverName,
-                type=serverType,
-                path=serverPath,
-                javaVersion=javaVersion,
-                maxRam=maxRam
-        )
+        
+        return serverName, serverType, serverPath, javaPath
     async def manage(self):
         workspaces = self.Workspace.workspaces
         if not workspaces:
