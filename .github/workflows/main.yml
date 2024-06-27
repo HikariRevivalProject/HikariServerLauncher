@@ -1,0 +1,26 @@
+name: HikariServerLauncher Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: 
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: PyInstaller Action
+        uses: Martin005/pyinstaller-action@v1.2.0
+        with:
+          spec: main.py
+          requirements: requirements.txt
+          options: -F
+          python_ver: 3.10.7
+          python_arch: x64
+          exe_path: ./dist
+          # If passed, uploads executable artifact  with this name. Else, artifact won't be uploaded.
+          upload_exe_with_name: HikariServerLauncher.exe
+                
