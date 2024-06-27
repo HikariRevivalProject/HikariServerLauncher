@@ -50,6 +50,9 @@ class Workspace(HSL):
             maxRam = server["maxRam"]
         )
     async def delete(self, index: int):
-        shutil.rmtree(self.workspaces[index]["path"])
+        try:
+            shutil.rmtree(self.workspaces[index]["path"])
+        except:
+            pass
         del self.workspaces[index]
         self.save()

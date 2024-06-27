@@ -27,9 +27,9 @@ from workspace import Workspace
 from java import Java
 
 OPTIONS_YN = ['是', '否']
-OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric']
+OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
-OPTIONS_MANAGE = ['启动服务器']
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录',]
 
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
 HSL_NAME = f'Hikari Server Launcher'
@@ -105,21 +105,22 @@ class Main(HSL):
             serverPath=serverPath
         )
         if server_setting == False:
-            console.print('[bold magenta]安装失败。')
+            console.print('[bold magenta]未安装服务器。')
             return
         serverName, serverType, serverPath, javaPath = server_setting
         maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
         #check regex
         while not MAXRAM_PATTERN.match(maxRam):
-            maxRam = await promptInput('[bold magenta]输入错误，请重新输入:')
-        Server = Server(
+            maxRam = await promptInput('输入错误，请重新输入:')
+        server = None
+        server = Server(
             name=serverName,
             type=serverType,
             path=serverPath,
             javaPath=javaPath,
             maxRam=maxRam
         )
-        await self.Workspace.add(Server)
+        await self.Workspace.add(server)
     async def install(self,*,serverName: str,serverPath: str):
         serverJarPath = os.path.join(serverPath,'server.jar')
         gameType = await promptSelect(OPTIONS_GAMETYPE,'请选择服务器类型:')
@@ -172,6 +173,8 @@ class Main(HSL):
                     console.print('Fabric 服务端下载失败。')
                     return False
                 console.print('Fabric 服务端下载完成。')
+            case 4:
+                return False
         return serverName, serverType, serverPath, javaPath
     async def manage(self):
         workspaces = self.Workspace.workspaces
@@ -181,9 +184,15 @@ class Main(HSL):
         index = await promptSelect([x['name'] for x in workspaces],'选择服务器:')
         serverName = workspaces[index]['name']
         choice = await promptSelect(OPTIONS_MANAGE,f'{serverName} - 请选择操作:')
-        if choice == 0:
-            Server = await self.Workspace.get(index)
-            Server.run()
+        server = await self.Workspace.get(index)
+        match choice:
+            case 0:
+                server.run()
+            case 1:
+                try:
+                    os.startfile(server.path)
+                except:
+                    console.print('[bold magenta]无法打开服务器目录。')
     async def delete(self):
         console.rule('服务器删除')
         if not self.Workspace.workspaces:

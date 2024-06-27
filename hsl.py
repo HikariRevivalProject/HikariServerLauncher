@@ -6,7 +6,7 @@ console = Console()
 def check_update(version: int) -> tuple:
     console.print('正在检查更新...')
     try:
-        r = requests.get(VERSION,timeout=1)
+        r = requests.get(VERSION,timeout=3)
         if r.status_code == 200:
             latest: int = r.json()['version']
             if version < latest:
@@ -21,17 +21,15 @@ def check_update(version: int) -> tuple:
         return False, version
 def get_source() -> dict:
     console.print('正在获取下载源信息...')
-    with open('source.json','r',encoding='utf-8') as f:
-        return json.loads(f.read())
     r = requests.get(DOWNLOAD_SOURCE,timeout=3)
     if r.status_code == 200:
         return r.json()
     else:
-        return {}
+        raise Exception
 
-HSL_VERSION = 6
-DOWNLOAD_SOURCE = r'http://mirror.hikari.bond:12345/source.json'
-VERSION = r'http://mirror.hikari.bond:12345/hsl.json'
+HSL_VERSION = 7
+DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
+VERSION = r'http://hsl.hikari.bond/hsl.json'
 try:
     SOURCE = get_source()
 except:
