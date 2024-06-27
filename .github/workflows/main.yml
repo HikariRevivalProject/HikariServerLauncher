@@ -17,7 +17,7 @@ jobs:
         with:
           spec: main.py
           requirements: requirements.txt
-          options: -F
+          options: -F -i HSL.ico
           python_ver: 3.10.7
           python_arch: x64
           exe_path: ./dist
