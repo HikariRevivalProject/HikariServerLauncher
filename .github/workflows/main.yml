@@ -21,13 +21,13 @@ jobs:
           python_ver: 3.10.7
           python_arch: x64
           exe_path: ./dist
-          upload_exe_with_name: HikariServerLauncher-${{VERSION}}.exe
+          upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}.exe
       - name: releases-action
         uses: nickatnight/releases-action@v2
         with:
           branch: main
           # Name of the release
-          name: Beta-v${{VERSION}}
+          name: Beta-v${{ vars.VERSION }}
           # Message for the release
           message: See Commit
           # Draft or naw?
@@ -35,4 +35,4 @@ jobs:
           # Pre-release or naw
           prerelease: false# optional, default is false
           # Name of tag
-          tag: v${{VERSION}}
+          tag: v${{ vars.VERSION }}
