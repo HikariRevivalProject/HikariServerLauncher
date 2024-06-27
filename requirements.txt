@@ -1,3 +1,5 @@
-tkintertools==3.0.0b1
+tkintertools[suggest]==3.0.0b3
 requests
 tqdm
+aioconsole
+rich
