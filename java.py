@@ -57,9 +57,8 @@ class Java(HSL):
         if not await self.checkJavaExist(javaVersion, path):
             print(f'Java版本 {javaVersion} 不存在。正在下载Java...')
             await self.downloadJava(javaVersion, path)
-        return (
-            os.path.join(javaPath, 'bin', JAVA_EXEC)
-            )
+        return os.path.join(javaPath, 'bin', JAVA_EXEC)
+
     async def getJavaByJavaVersion(self, javaVersion:str, path:str) -> str:
         javaPath = os.path.join(path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion, path):

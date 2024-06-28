@@ -7,7 +7,7 @@ from utils.download import downloadFile
 FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 console = Console()
 async def nameJoin(baseurl: str,mcVersion:str, forgeversion: str,category: str,format: str):
-    return f'{baseurl}{mcVersion}/{forgeversion}/forge-{mcVersion}-{forgeversion}-{category}.{format}'
+    return f'{baseurl}{mcVersion}-{forgeversion}/forge-{mcVersion}-{forgeversion}-{category}.{format}'
     #return baseurl + forgeversion + '/forge-' + forgeversion + '-' + category + '.' + format
 async def get_mcversions(source: dict,use_bmclapi: bool=False) -> list:
     sources = source["forge"]['list']
@@ -70,11 +70,11 @@ async def download_installer(source: dict,mcVersion: str,version: str,path: str,
                 'format': 'jar'
             }
             status = downloadFile(source['download'],path,params=params)
-            if status:
-                return True
+            return status
         if source['type'] == 'official':
             url = await nameJoin(source['download'],mcVersion,version,'installer','jar')
             status = downloadFile(url, path)
+            return status
     return False
 async def run_install(javaPath: str,path: str):
     cmd = f'{javaPath} -jar forge-installer.jar --installServer'

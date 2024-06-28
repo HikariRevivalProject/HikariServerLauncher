@@ -1,12 +1,12 @@
 import asyncio
 import os
 import re
+import javaproperties
 from rich.console import Console
-
 
 from prompt import promptSelect, promptInput, promptConfirm
 from utils import vanilla, paper, forge, fabric, osfunc
-from hsl import HSL
+from hsl import HSL, get_configs
 from server import Server
 from config import Config
 from workspace import Workspace
@@ -15,9 +15,8 @@ from java import Java
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录',"启动前执行命令","自定义JVM设置","取消"]
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令","自定义JVM设置","取消"]
 
-FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
 HSL_NAME = f'Hikari Server Launcher'
 OS_MAXRAM = osfunc.getOSMaxRam()
@@ -119,7 +118,6 @@ class Main(HSL):
             case 2:
                 #forge
                 serverType = 'forge'
-                #raise NotImplementedError('Forge 服务端暂未实现。')
                 mcVersions = await vanilla.get_versions(self.source)
                 _mcVersions = await forge.get_mcversions(self.source,self.Config.config['use_mirror'])
                 mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release' and x['id'] in _mcVersions]
@@ -129,6 +127,11 @@ class Main(HSL):
                 forgeVersions: list = await forge.get_forgeversions(self.source,mcVersion,self.Config.config['use_mirror'])
                 index: int = await promptSelect(forgeVersions,'请选择 Forge 版本:')
                 forgeVersion: str = forgeVersions[index]
+                print(forgeVersion)
+                if '-' in forgeVersion:
+                    forgeVersion = forgeVersion.split('-')[1]
+                data['mcVersion'] = mcVersion
+                data['forgeVersion'] = forgeVersion
                 installerPath = os.path.join(serverPath,'forge-installer.jar')
                 status = await forge.download_installer(self.source,mcVersion,forgeVersion,installerPath,self.Config.config['use_mirror'])
                 if not status:
@@ -141,11 +144,7 @@ class Main(HSL):
                     return False
                 console.print('Forge 安装完成。')
                 
-                if '-' not in forgeVersion:
-                    data['mcVersion'] = mcVersion
-                    data['forgeVersion'] = forgeVersion
-                else:
-                    data['mcVersion'], data['forgeVersion']  = re.findall(FORGE_REGEX,forgeVersion) 
+                
             case 3:
                 #fabric
                 serverType = 'fabric'
@@ -164,7 +163,7 @@ class Main(HSL):
         return serverName, serverType, serverPath, javaPath, data
     async def manage(self):
         workspaces = self.Workspace.workspaces
-        if not workspaces:
+        while not workspaces:
             await self.create()
         console.rule('服务器管理')
         index = await promptSelect([x['name'] for x in workspaces],'选择服务器:')
@@ -180,15 +179,70 @@ class Main(HSL):
                 except:
                     console.print('[bold magenta]无法打开服务器目录。')
             case 2:
+                await self.editConfig(server)
+            case 3:
                 cmd = await promptInput('请输入命令，将在服务器启动前在服务器目录执行:')
                 await self.Workspace.modifyData(index,'startup_cmd',cmd)
                 console.print('[bold green]命令设置成功。')
-            case 3:
+            case 4:
                 console.print('[white bold]请输入JVM参数（包含横杠，例如-Xms1G，可多个），将在服务器启动时添加至启动参数内\n默认已设置-Dfile.encoding=utf-8以及-Xmx')
                 jvm_setting = await promptInput('此为高级设置，若您不了解请勿随意填写:')
                 await self.Workspace.modifyData(index,'jvm_setting',jvm_setting)
                 console.print('[bold green]JVM参数设置成功。')
         await self.mainMenu()
+    async def editConfig(self,server:Server):
+        console.print('[blue bold]读取特定配置索引:')
+        configs = get_configs()
+        editableConfigs = []
+        if len(configs) == 0:
+            console.print('[bold magenta]特定配置索引读取失败，请检查网络连接。')
+            return
+        for i in configs:
+            console.print(f'[bold green]尝试读取配置文件：{i["name"]}')
+            match i['type']:
+                case 'properties':
+                    config_path = os.path.join(server.path,i['path'])
+                    if not os.path.exists(config_path):
+                        console.print(f'[bold magenta]{i["name"]} - 配置文件不存在。')
+                        return
+                    with open(config_path,'r') as f:
+                        config: dict = javaproperties.load(f)
+                        console.print(f'[bold green]{i["name"]} - 读取成功。')
+                        for x in i['keys']:
+                            if x['key'] in list(config.keys()) and i not in editableConfigs:
+                                editableConfigs.append(i)
+        if not editableConfigs:
+            console.print('[bold magenta]没有可编辑的配置文件。')
+            return
+        editIndex: int = await promptSelect([x['name']+ " - " + x['description'] for x in editableConfigs],'请选择要修改的配置文件:')
+        editConfig: dict = editableConfigs[editIndex]
+        editableKeys: list = []
+        editableKeysName: list = []
+        del x
+        while True:
+            for x in editConfig['keys']:
+                editableKeys: list = [x['key'] for x in editConfig['keys']]
+                editableKeysName: list = [x['name'] + " - " + x['description'] for x in editConfig['keys']]
+            editKeyIndex = await promptSelect(editableKeysName + ['返回'],'请选择要修改的配置项:')
+            if editKeyIndex == len(editableKeys):
+                return
+            x = editConfig['keys'][editKeyIndex]
+            match x['type']:
+                case "int":
+                    editValue = await promptInput('请输入新值(整数):')
+                case "str":
+                    editValue = await promptInput('请输入新值(字符串):')
+                case "bool":
+                    editBool = await promptConfirm('请选择新值:')
+                    editValue = 'true' if editBool == True else 'false'
+            config[x["key"]] = editValue
+            break
+        match configs[editIndex]['type']:
+            case 'properties':
+                config_path = os.path.join(server.path,configs[editIndex]['path'])
+                with open(config_path,'w',encoding='utf-8') as f:
+                    javaproperties.dump(config,f)
+
     async def delete(self):
         console.rule('服务器删除')
         if not self.Workspace.workspaces:
@@ -199,7 +253,8 @@ class Main(HSL):
             await self.Workspace.delete(index)
         await self.mainMenu()
     async def mainMenu(self):
-        console.rule(f'Hikari Server Launcher v0.{self.version}')
+        #console.clear()
+        console.rule(f'Hikari Server Launcher v{str(self.version/10)}')
         console.print('[bold gold]欢迎使用 Hikari Server Launcher.')
         choice = await promptSelect(OPTIONS_MENU,'菜单：')
         if choice == 0:
@@ -219,5 +274,6 @@ async def main():
         await MainProgram.welcome()
     else:
         await MainProgram.mainMenu()
+
 if __name__ == '__main__':
     asyncio.run(main())

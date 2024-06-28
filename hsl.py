@@ -21,14 +21,27 @@ def check_update(version: int) -> tuple:
         return False, version
 def get_source() -> dict:
     console.print('正在获取下载源信息...')
-    r = requests.get(DOWNLOAD_SOURCE,timeout=3)
-    if r.status_code == 200:
-        return r.json()
-    else:
+    try:
+        r = requests.get(DOWNLOAD_SOURCE,timeout=3)
+        if r.status_code == 200:
+            return r.json()
+        else:
+            raise Exception
+    except:
         raise Exception
-
-HSL_VERSION = 8
+def get_configs() -> list:
+    console.print('正在获取特定配置信息...')
+    try:
+        r = requests.get(CONFIGS_SOURCE,timeout=3)
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return []
+    except:
+        return []
+HSL_VERSION = 10
 DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
+CONFIGS_SOURCE = r'http://hsl.hikari.bond/configs.json'
 VERSION = r'http://hsl.hikari.bond/hsl.json'
 try:
     SOURCE = get_source()

@@ -1,13 +1,11 @@
+from concurrent.futures import thread
 import os
-from pdb import run
 import subprocess
 from rich.console import Console
 from threading import Thread
-import aioconsole
 import psutil
 from queue import Queue
 from hsl import HSL
-from utils import forge
 
 console = Console()
 
@@ -21,10 +19,6 @@ class Server(HSL):
                 output_queue.put(line.decode('utf-8').strip())
             except UnicodeDecodeError:
                 output_queue.put(line.decode('gbk').strip())
-            if not self.check_process(process):
-                console.log("服务器已关闭，停止日志输出...")
-                output_queue.put(None)
-                break
             if process.poll() is not None:
                 output_queue.put(None)
                 break
@@ -44,8 +38,11 @@ class Server(HSL):
             input_queue.put(command_input)
             if input_queue.get() is None:
                 break
-            process.stdin.write(command_input.encode('utf-8') + b'\n')
-            process.stdin.flush()
+            try:
+                process.stdin.write(command_input.encode('utf-8') + b'\n')
+                process.stdin.flush()
+            except OSError:
+                os._exit(0)
 
     def check_process(self, process):
         return psutil.pid_exists(process.pid)
@@ -94,19 +91,20 @@ class Server(HSL):
             stderr=subprocess.STDOUT,
         )
 
-        t1 = Thread(target=self.readLine, args=(process, output_queue))
+        
         t2 = Thread(target=self.input, args=(process, input_queue))
+        t1 = Thread(target=self.readLine, args=(process, output_queue))
 
         t1.start()
         t2.start()
 
-        while True:
+        while self.check_process(process):
             line = output_queue.get()
             if line is None:
                 break
             console.print(line)
 
-        t1.join()
-        t2.join()
+        #t1.join()
+        #t2.join()
 
 
