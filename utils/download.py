@@ -1,9 +1,15 @@
 import requests
 from tqdm import tqdm
-
-def downloadFile(url, save_path):
+from rich.console import Console
+console = Console()
+def downloadFile(url: str, save_path: str, params=None):
+    console.log(url)
     try:
-        response = requests.get(url, stream=True)
+        if params:
+            console.log(params)
+            response = requests.get(url, params=params, stream=True)
+        else:
+            response = requests.get(url, stream=True)
         if response.status_code == 200:
             total_size = int(response.headers.get('content-length', 0))
             block_size = 1024

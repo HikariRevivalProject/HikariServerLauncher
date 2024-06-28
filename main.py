@@ -1,4 +1,6 @@
 import asyncio
+from calendar import c
+import cmd
 import os
 import re
 import webbrowser
@@ -29,8 +31,9 @@ from java import Java
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录',]
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录',"启动前执行命令","自定义JVM设置","取消"]
 
+FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
 HSL_NAME = f'Hikari Server Launcher'
 OS_MAXRAM = osfunc.getOSMaxRam()
@@ -107,7 +110,7 @@ class Main(HSL):
         if server_setting == False:
             console.print('[bold magenta]未安装服务器。')
             return
-        serverName, serverType, serverPath, javaPath = server_setting
+        serverName, serverType, serverPath, javaPath, data = server_setting
         maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
         #check regex
         while not MAXRAM_PATTERN.match(maxRam):
@@ -118,11 +121,13 @@ class Main(HSL):
             type=serverType,
             path=serverPath,
             javaPath=javaPath,
-            maxRam=maxRam
+            maxRam=maxRam,
+            data=data
         )
         await self.Workspace.add(server)
     async def install(self,*,serverName: str,serverPath: str):
         serverJarPath = os.path.join(serverPath,'server.jar')
+        data = {}
         gameType = await promptSelect(OPTIONS_GAMETYPE,'请选择服务器类型:')
         match gameType:
             case 0:
@@ -141,7 +146,6 @@ class Main(HSL):
                     console.print('[bold magenta]Vanilla 服务端下载失败。')
                     return False
                 console.print('Vanilla 服务端下载完成。')
-
             case 1:
                 #paper
                 serverType = 'paper'
@@ -155,17 +159,39 @@ class Main(HSL):
             case 2:
                 #forge
                 serverType = 'forge'
-                raise NotImplementedError('Forge 服务端暂未实现。')
+                #raise NotImplementedError('Forge 服务端暂未实现。')
                 mcVersions = await vanilla.get_versions(self.source)
-                mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release']
-                index = await promptSelect(mcVersions,'请选择Minecraft服务器版本:')
+                _mcVersions = await forge.get_mcversions(self.source,self.Config.config['use_mirror'])
+                mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release' and x['id'] in _mcVersions]
+                index = await promptSelect(mcVersions,'请选择 Minecraft 版本:')
+                mcVersion = mcVersions[index]
+                javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
+                forgeVersions: list = await forge.get_forgeversions(self.source,mcVersion,self.Config.config['use_mirror'])
+                index: int = await promptSelect(forgeVersions,'请选择 Forge 版本:')
+                forgeVersion: str = forgeVersions[index]
+                installerPath = os.path.join(serverPath,'forge-installer.jar')
+                status = await forge.download_installer(self.source,mcVersion,forgeVersion,installerPath,self.Config.config['use_mirror'])
+                if not status:
+                    console.print('Forge 安装器下载失败。')
+                    return False
+                console.print('Forge 安装器下载完成，尝试执行安装...')
+                status = await forge.run_install(javaPath,serverPath)
+                if not status:
+                    console.print('Forge 安装失败。')
+                    return False
+                console.print('Forge 安装完成。')
+                
+                if '-' not in forgeVersion:
+                    data['mcVersion'] = mcVersion
+                    data['forgeVersion'] = forgeVersion
+                else:
+                    data['mcVersion'], data['forgeVersion']  = re.findall(FORGE_REGEX,forgeVersion) 
             case 3:
                 #fabric
                 serverType = 'fabric'
-                mcVersions = await vanilla.get_versions(self.source)
-                mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release']
-                index = await promptSelect(mcVersions,'请选择Minecraft服务器版本:')
-                mcVersion = mcVersions[index]
+                fabVersion = await fabric.getMcVersions(self.source)
+                index = await promptSelect(fabVersion,'请选择 Fabric 服务器版本:')
+                mcVersion = fabVersion[index]
                 javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
                 loaderVersion = await fabric.getLoaderVersion(self.source)
                 status = await fabric.downloadServer(self.source,os.path.join(serverPath,'server.jar'),mcVersion,loaderVersion)
@@ -175,16 +201,16 @@ class Main(HSL):
                 console.print('Fabric 服务端下载完成。')
             case 4:
                 return False
-        return serverName, serverType, serverPath, javaPath
+        return serverName, serverType, serverPath, javaPath, data
     async def manage(self):
         workspaces = self.Workspace.workspaces
         if not workspaces:
             await self.create()
         console.rule('服务器管理')
         index = await promptSelect([x['name'] for x in workspaces],'选择服务器:')
-        serverName = workspaces[index]['name']
-        choice = await promptSelect(OPTIONS_MANAGE,f'{serverName} - 请选择操作:')
         server = await self.Workspace.get(index)
+        serverName = server.name
+        choice = await promptSelect(OPTIONS_MANAGE,f'{serverName} - 请选择操作:')
         match choice:
             case 0:
                 server.run()
@@ -193,6 +219,16 @@ class Main(HSL):
                     os.startfile(server.path)
                 except:
                     console.print('[bold magenta]无法打开服务器目录。')
+            case 2:
+                cmd = await promptInput('请输入命令，将在服务器启动前在服务器目录执行:')
+                await self.Workspace.modifyData(index,'startup_cmd',cmd)
+                console.print('[bold green]命令设置成功。')
+            case 3:
+                console.print('[white bold]请输入JVM参数（包含横杠，例如-Xms1G，可多个），将在服务器启动时添加至启动参数内\n默认已设置-Dfile.encoding=utf-8以及-Xmx')
+                jvm_setting = await promptInput('此为高级设置，若您不了解请勿随意填写:')
+                await self.Workspace.modifyData(index,'jvm_setting',jvm_setting)
+                console.print('[bold green]JVM参数设置成功。')
+        await self.mainMenu()
     async def delete(self):
         console.rule('服务器删除')
         if not self.Workspace.workspaces:

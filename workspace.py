@@ -37,7 +37,8 @@ class Workspace(HSL):
             "type": Server.type,
             "path": Server.path,
             "javaPath": Server.javaPath,
-            "maxRam": Server.maxRam
+            "maxRam": Server.maxRam,
+            "data": Server.data
         })
         self.save()
     async def get(self, index: int):
@@ -47,7 +48,8 @@ class Workspace(HSL):
             type = server["type"],
             path = server["path"],
             javaPath = server["javaPath"],
-            maxRam = server["maxRam"]
+            maxRam = server["maxRam"],
+            data = server["data"]
         )
     async def delete(self, index: int):
         try:
@@ -56,3 +58,12 @@ class Workspace(HSL):
             pass
         del self.workspaces[index]
         self.save()
+
+    async def modify(self, index: int, key: str, value: str):
+        self.workspaces[index][key] = value
+        self.save()
+        self.load()
+    async def modifyData(self, index: int, key: str, value: str):
+        self.workspaces[index]['data'][key] = value
+        self.save()
+        self.load()
