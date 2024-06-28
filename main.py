@@ -253,7 +253,7 @@ class Main(HSL):
             await self.Workspace.delete(index)
         await self.mainMenu()
     async def mainMenu(self):
-        #console.clear()
+        console.clear()
         console.rule(f'Hikari Server Launcher v{str(self.version/10)}')
         console.print('[bold gold]欢迎使用 Hikari Server Launcher.')
         choice = await promptSelect(OPTIONS_MENU,'菜单：')
@@ -273,7 +273,10 @@ async def main():
     if MainProgram.Config.config['first_run']:
         await MainProgram.welcome()
     else:
-        await MainProgram.mainMenu()
+        try:
+            await MainProgram.mainMenu()
+        except:
+            exit()
 
 if __name__ == '__main__':
     asyncio.run(main())
