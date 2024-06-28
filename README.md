@@ -26,11 +26,12 @@ Hikari Server Launcher is a simple, lightweight, and easy-to-use launcher/instal
 3. 按照屏幕上的提示安装服务器。
 4. 完事了！
 ## 致谢 Thanks
-?：
 - [Hikari](https://github.com/Hikari16665) 我自己
+
 站点：
 - [OpenBMCLAPI](https://github.com/bangbang93/openbmclapi) OpenBMCLAPI 提供Minecraft服务端下载
 - [MC灵依资源站](https://mcres.cn/) 提供了 Java 镜像源
 - [辰隙互联](https://www.singsi.cn) 提供了 服务器
+
 个人：
 - GloryGods 提供了 Java 镜像源
