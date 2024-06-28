@@ -27,7 +27,7 @@ def get_source() -> dict:
     else:
         raise Exception
 
-HSL_VERSION = 7
+HSL_VERSION = 8
 DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
 VERSION = r'http://hsl.hikari.bond/hsl.json'
 try:
