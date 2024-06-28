@@ -1,23 +1,7 @@
 import asyncio
-from calendar import c
-import cmd
 import os
 import re
-import webbrowser
-import math
-import random
 from rich.console import Console
-
-#import tkintertools as tkt
-#import tkintertools.animation as animation
-#import tkintertools.color as color
-#import tkintertools.constants as constants
-#import tkintertools.standard.dialogs as dialogs  # Customied
-#import tkintertools.standard.features as features  # Customied
-#import tkintertools.standard.shapes as shapes  # Customied
-#import tkintertools.standard.texts as texts  # Customied
-#import tkintertools.style as style
-#import tkintertools.three as three
 
 
 from prompt import promptSelect, promptInput, promptConfirm
@@ -41,31 +25,7 @@ WIDTH = 1280
 HEIGHT = 720
 
 console = Console()
-#style.use_theme('system')
-#constants.SYSTEM = "Windows10"
-'''
-root = tkt.Tk((WIDTH,HEIGHT), title=HSL_NAME)
-#root.iconbitmap('HSL.ico')
-root.center()
-canvas = tkt.Canvas(
-    root, zoom_item=True, keep_ratio="full",free_anchor=True, 
-    highlightthickness=1, highlightbackground="grey"
-)
-canvas.place(width=1280, height=720, x=640, y=360, anchor="center")
-canvas.create_line(1000, 0, 1000, 800, fill="grey")
-_l = tkt.Label(canvas, (0, 0), (1280, 60), name="")
-_l.shapes[0].styles = {"normal": {"fill": "#C286FF", "outline": "#C286FF"}}
-_l.update()
-_textName = canvas.create_text(200,30,text=HSL_NAME,font=('Arial',30))
-_textRelease = canvas.create_text(500,30,text='Pre-release',font=('Arial',30))
-canvas.itemconfigure(_textName,fill='#FFFFFF')
-canvas.itemconfigure(_textRelease,fill='#FFFFFF')
 
-tkt.UnderlineButton(canvas, (1200, 640), text="加入QQ群", through=True, command=lambda: webbrowser.open_new_tab("https://qm.qq.com/q/S1HInZBv22"))
-tkt.UnderlineButton(canvas, (1200, 680), text="项目主页", through=True, command=lambda: webbrowser.open_new_tab("https://github.com/Hikari16665/HikariServerLauncher"))
-
-root.mainloop()
-'''
 class Main(HSL):
     def __init__(self):
         super().__init__()
@@ -239,7 +199,7 @@ class Main(HSL):
             await self.Workspace.delete(index)
         await self.mainMenu()
     async def mainMenu(self):
-        console.rule('Hikari Server Launcher')
+        console.rule(f'Hikari Server Launcher v0.{self.version}')
         console.print('[bold gold]欢迎使用 Hikari Server Launcher.')
         choice = await promptSelect(OPTIONS_MENU,'菜单：')
         if choice == 0:

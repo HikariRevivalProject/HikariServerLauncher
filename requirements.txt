@@ -1,7 +1,7 @@
-tkintertools[suggest]==3.0.0b3
 requests
 tqdm
 aioconsole
 rich
 noneprompt
 psutil
+javaproperties
