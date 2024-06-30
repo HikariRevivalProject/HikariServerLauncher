@@ -22,7 +22,7 @@ jobs:
           python_arch: x64
           exe_path: ./dist
           upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}.exe
-      - name: SFTP Upload to website
+      - name: EXE Upload to website
         uses: Creepios/sftp-action@v1.0.5
         with:
           # Host to login
@@ -33,8 +33,6 @@ jobs:
           username: root
           # Passwort to login
           password: ${{ secrets.PASSWORD }}
-          # Map of the path to upload multiple files.
-          additionalPaths: # optional, default is {}
           # Local file or directory
           localPath: ./dist/HikariServerLauncher-${{ vars.VERSION }}.exe
           # Remote file or directory path (file or directories will be created)
