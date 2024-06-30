@@ -1,15 +1,21 @@
+
 [
     {
         "name": "server.properties",
+        "?name": "! 配置文件显示在编辑处的名字",
         "path": "server.properties",
+        "?path": "! 配置文件的路径，目前只支持根目录下",
         "description": "Minecraft服务器基本配置文件 包含端口，人数，正版等",
+        "?description": "! 关于配置文件的介绍",
         "type": "properties",
+        "?type": "! 配置文件类型，目前只支持properties，对应.properties文件",
         "keys": [
             {
                 "name": "服务器端口",
                 "key": "server-port",
                 "description": "服务器将监听的端口（默认：25565）",
-                "type": "int"
+                "type": "int",
+                "?type": "! 可以为int str bool"
             },
             {
                 "name": "正版状态",

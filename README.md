@@ -25,6 +25,11 @@ Hikari Server Launcher is a simple, lightweight, and easy-to-use launcher/instal
 2. 解压文件并运行 HikariServerLauncher.exe
 3. 按照屏幕上的提示安装服务器。
 4. 完事了！
+## Contributing 贡献
+- 你可以从两方面对此项目贡献：
+- 提交 issue, pull request 来完善这个项目。
+- 编辑configs.json，这是特定配置的索引文件，个人时间有限无法全部适配，configs.json的格式可以参考 [config.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/configs.json)。
+
 ## 致谢 Thanks
 - [Hikari](https://github.com/Hikari16665) 我自己
 
