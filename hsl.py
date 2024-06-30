@@ -4,7 +4,7 @@ from rich.console import Console
 
 console = Console()
 
-HSL_VERSION = 10
+HSL_VERSION = 11
 DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
 CONFIGS_SOURCE = r'http://hsl.hikari.bond/configs.json'
 VERSION = r'http://hsl.hikari.bond/hsl.json'

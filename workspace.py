@@ -41,7 +41,7 @@ class Workspace(HSL):
             "data": Server.data
         })
         self.save()
-    async def get(self, index: int):
+    async def get(self, index: int) -> Server:
         server = self.workspaces[index]
         return Server(
             name = server["name"],
@@ -51,6 +51,18 @@ class Workspace(HSL):
             maxRam = server["maxRam"],
             data = server["data"]
         )
+    async def getFromName(self, name: str) -> Server:
+        for server in self.workspaces:
+            if server["name"] == name:
+                return Server(
+                    name = server["name"],
+                    type = server["type"],
+                    path = server["path"],
+                    javaPath = server["javaPath"],
+                    maxRam = server["maxRam"],
+                    data = server["data"]
+                )
+        raise Exception("Server not found")
     async def delete(self, index: int):
         try:
             shutil.rmtree(self.workspaces[index]["path"])

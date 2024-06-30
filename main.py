@@ -15,7 +15,7 @@ from java import Java
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令","自定义JVM设置","取消"]
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动','取消']
 
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
 HSL_NAME = 'Hikari Server Launcher'
@@ -54,8 +54,8 @@ class Main(HSL):
 
     async def create(self):
         serverName = await promptInput('请输入服务器名称:')
-        while not serverName.strip() or (serverName in ['con','aux','nul','prn'] and os.name == 'nt'):
-            serverName = await promptInput('[bold magenta]名称非法，请重新输入:')
+        while (not serverName.strip()) or (serverName in ['con','aux','nul','prn'] and os.name == 'nt'):
+            serverName = await promptInput('名称非法，请重新输入:')
         
         servers = self.Workspace.workspaces
         if any(s['name'] == serverName for s in servers):
@@ -173,7 +173,12 @@ class Main(HSL):
             jvm_setting = await promptInput('此为高级设置，若您不了解请勿随意填写:')
             await self.Workspace.modifyData(index, 'jvm_setting', jvm_setting)
             console.print('[bold green]JVM参数设置成功。')
-        
+        elif choice == 5:
+            if not await promptConfirm(f'!!! 确定要将 {server.name} 设为自动启动吗？'): return
+            self.Config.config['autorun'] = server.name
+            self.Config.save_config()
+            console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
+            exit()
         await self.mainMenu()
 
     async def editConfig(self, server: Server):
@@ -273,10 +278,14 @@ async def main():
     if MainProgram.Config.config['first_run']:
         await MainProgram.welcome()
     else:
-        #try:
-        await MainProgram.mainMenu()
-        #except Exception as e:
-        #    console.print('出现未知异常', e)
+        try:
+            if MainProgram.Config.config['autorun']:
+                server = await MainProgram.Workspace.getFromName(MainProgram.Config.config['autorun'])
+                server.run()
+                exit()
+            await MainProgram.mainMenu()
+        except Exception as e:
+            console.print('出现未知异常', e)
 
 if __name__ == '__main__':
     asyncio.run(main())

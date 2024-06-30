@@ -13,6 +13,7 @@ class Config:
         self.config['workspace_file'] = 'workspace.json'
         self.config['config_path'] = os.path.join(self.config['config'], self.config['config_file'])
         self.config['workspace_path'] = os.path.join(self.config['workspace'], self.config['workspace_file'])
+        self.config['autorun'] = ''
         self.initialize()
 
     def initialize(self):
