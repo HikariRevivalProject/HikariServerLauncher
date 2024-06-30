@@ -1,4 +1,4 @@
-[HikariServerLauncher](https://socialify.git.ci/Hikari16665/HikariServerLauncher/image?description=1&descriptionEditable=Lightweight%20Minecraft%20server%20launcher/installer%20in%20Python&font=Jost&forks=1&issues=1&name=1&pattern=Diagonal%20Stripes&pulls=1&stargazers=1&theme=Auto)
+![HikariServerLauncher](https://socialify.git.ci/Hikari16665/HikariServerLauncher/image?description=1&descriptionEditable=Lightweight%20Minecraft%20server%20launcher/installer%20in%20Python&font=Jost&forks=1&issues=1&name=1&pattern=Diagonal%20Stripes&pulls=1&stargazers=1&theme=Auto)
 # Hikari Server Launcher
 Hikari Server Launcher 是一个简单、轻量级的，易用的Minecraft服务器安装工具。
 
