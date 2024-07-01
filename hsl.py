@@ -4,7 +4,7 @@ from rich.console import Console
 
 console = Console()
 
-HSL_VERSION = 11
+HSL_VERSION = 12
 DOWNLOAD_SOURCE = r'http://hsl.hikari.bond/source.json'
 CONFIGS_SOURCE = r'http://hsl.hikari.bond/configs.json'
 VERSION = r'http://hsl.hikari.bond/hsl.json'
@@ -47,7 +47,7 @@ except Exception as e:
     exit()
 
 NEWVERSION_INFO = check_update(HSL_VERSION)
-CONFIG = Config().config
+CONFIG = Config()
 
 class HSL:
     def __init__(self):

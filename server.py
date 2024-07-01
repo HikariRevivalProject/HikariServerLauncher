@@ -1,4 +1,3 @@
-from concurrent.futures import thread
 import os
 import subprocess
 from rich.console import Console
@@ -13,7 +12,7 @@ class Server(HSL):
     """
     Server Class
     """
-    def readLine(self, process, output_queue):
+    def readLine(self, process, output_queue: Queue):
         for line in iter(process.stdout.readline, b''):
             try:
                 output_queue.put(line.decode('utf-8').strip())
@@ -23,7 +22,7 @@ class Server(HSL):
                 output_queue.put(None)
                 break
                 
-    def input(self, process, input_queue):
+    def input(self, process, input_queue: Queue):
         while True:
             try:
                 command_input = input(f'({self.name}) >>> ')

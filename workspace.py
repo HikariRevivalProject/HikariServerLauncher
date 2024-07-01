@@ -7,8 +7,8 @@ class Workspace(HSL):
     def __init__(self):
         super().__init__()
         self.workspaces = []
-        self.path = self.config["workspace"]
-        self.file_path = self.config["workspace_path"]
+        self.path = self.config.workspace_dir
+        self.file_path = self.config.workspace_path
 
         self.initialize()
     def initialize(self):

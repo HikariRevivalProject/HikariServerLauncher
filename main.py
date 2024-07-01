@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import time
 import javaproperties
 from rich.console import Console
 
@@ -8,7 +9,6 @@ from prompt import promptSelect, promptInput, promptConfirm
 from utils import vanilla, paper, forge, fabric, osfunc
 from hsl import HSL, get_configs
 from server import Server
-from config import Config
 from workspace import Workspace
 from java import Java
 
@@ -28,7 +28,6 @@ console = Console()
 class Main(HSL):
     def __init__(self):
         super().__init__()
-        self.Config = Config()
         self.Workspace = Workspace()
         self.Java = Java()
         try:
@@ -43,11 +42,11 @@ class Main(HSL):
         console.print('如果你的服务器环境在国内, 推荐使用镜像源源以获得更好的速度。\n是否使用镜像源优先? (默认: 否)\n')
         option = await promptSelect(OPTIONS_YN, '是否使用镜像源优先?')
         if option == 0:
-            self.Config.config['use_mirror'] = True
+            self.config.use_mirror = True
             console.print('设置已应用。')
         console.rule('配置完成')
-        self.Config.config['first_run'] = False
-        self.Config.save_config()
+        self.config.first_run = False
+        self.config.save_config()
         console.rule('服务器创建')
         await self.create()
         await self.mainMenu()
@@ -88,9 +87,9 @@ class Main(HSL):
             serverType = 'vanilla'
             mcVersions = [x['id'] for x in await vanilla.get_versions(self.source) if x['type'] == 'release']
             mcVersion = mcVersions[await promptSelect(mcVersions, '请选择Minecraft服务器版本:')]
-            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
+            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
             console.print(f'正在下载 Vanilla 服务端: {mcVersion}')
-            if not await vanilla.downloadServer(self.source, mcVersion, serverJarPath, self.Config.config['use_mirror']):
+            if not await vanilla.downloadServer(self.source, mcVersion, serverJarPath, self.config.use_mirror):
                 console.print('[bold magenta]Vanilla 服务端下载失败。')
                 return False
             console.print('Vanilla 服务端下载完成。')
@@ -98,7 +97,7 @@ class Main(HSL):
         elif gameType == 1:  # paper
             serverType = 'paper'
             mcVersion = await paper.getLatestVersionName(self.source)
-            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
+            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
             if not await paper.downloadLatest(self.source, serverJarPath):
                 console.print('Paper 服务端下载失败。')
                 return False
@@ -108,12 +107,12 @@ class Main(HSL):
             #forge
             serverType = 'forge'
             mcVersions = await vanilla.get_versions(self.source)
-            _mcVersions = await forge.get_mcversions(self.source,self.Config.config['use_mirror'])
+            _mcVersions = await forge.get_mcversions(self.source,self.config.use_mirror)
             mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release' and x['id'] in _mcVersions]
             index = await promptSelect(mcVersions,'请选择 Minecraft 版本:')
             mcVersion = mcVersions[index]
-            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
-            forgeVersions: list = await forge.get_forgeversions(self.source,mcVersion,self.Config.config['use_mirror'])
+            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
+            forgeVersions: list = await forge.get_forgeversions(self.source,mcVersion,self.config.use_mirror)
             index: int = await promptSelect(forgeVersions,'请选择 Forge 版本:')
             forgeVersion: str = forgeVersions[index]
             print(forgeVersion)
@@ -122,7 +121,7 @@ class Main(HSL):
             data['mcVersion'] = mcVersion
             data['forgeVersion'] = forgeVersion
             installerPath = os.path.join(serverPath,'forge-installer.jar')
-            status = await forge.download_installer(self.source,mcVersion,forgeVersion,installerPath,self.Config.config['use_mirror'])
+            status = await forge.download_installer(self.source,mcVersion,forgeVersion,installerPath,self.config.use_mirror)
             if not status:
                 console.print('Forge 安装器下载失败。')
                 return False
@@ -137,7 +136,7 @@ class Main(HSL):
             serverType = 'fabric'
             fabVersion = await fabric.getMcVersions(self.source)
             mcVersion = fabVersion[await promptSelect(fabVersion, '请选择 Fabric 服务器版本:')]
-            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.Config.config['workspace'])
+            javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
             loaderVersion = await fabric.getLoaderVersion(self.source)
             if not await fabric.downloadServer(self.source, os.path.join(serverPath, 'server.jar'), mcVersion, loaderVersion):
                 console.print('Fabric 服务端下载失败。')
@@ -175,8 +174,8 @@ class Main(HSL):
             console.print('[bold green]JVM参数设置成功。')
         elif choice == 5:
             if not await promptConfirm(f'!!! 确定要将 {server.name} 设为自动启动吗？'): return
-            self.Config.config['autorun'] = server.name
-            self.Config.save_config()
+            self.config.autorun = server.name
+            self.config.save_config()
             console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
             exit()
         await self.mainMenu()
@@ -216,22 +215,27 @@ class Main(HSL):
                 '请选择要修改的配置文件:'
             )
             if selected_index == len(editableConfigs):
+                #exit
                 break
 
             editConfig, config = editableConfigs[selected_index]
             editableKeys = [(key_info['key'], f"{key_info['name']} - {key_info['description']}") for key_info in editConfig['keys']]
-            
+            #editableKeys: LIST[key_info, name and description]
             while True:
                 editKeyIndex = await promptSelect(
                     [x[1] for x in editableKeys] + ['返回'], 
                     '请选择要修改的配置项:'
                 )
                 if editKeyIndex == len(editableKeys):
+                    #exit
                     break
                 
                 key, _ = editableKeys[editKeyIndex]
                 key_info = editConfig['keys'][editKeyIndex]
-                
+                key_danger, key_tips = key_info['danger'], key_info['tips']
+                console.print(key_tips)
+                if key_danger:
+                    console.print(f'[bold red]这是一个危险配置！修改前请三思！')
                 if key_info['type'] == "int":
                     editValue = await promptInput('请输入新值(整数):')
                 elif key_info['type'] == "str":
@@ -272,17 +276,27 @@ class Main(HSL):
             exit(0)
         else:
             raise NotImplementedError('你怎么会选择到这里呢？')
+    async def autorun(self):
+        server = await self.Workspace.getFromName(self.config.autorun)
+        console.print(f'[bold blue]将于三秒后启动 {server.name}。，键入Ctrl+C(^C)可取消.')
+        time.sleep(3)
+        server.run()
+        exit()
 
 async def main():
     MainProgram = Main()
-    if MainProgram.Config.config['first_run']:
+    if MainProgram.config.first_run:
         await MainProgram.welcome()
     else:
         try:
-            if MainProgram.Config.config['autorun']:
-                server = await MainProgram.Workspace.getFromName(MainProgram.Config.config['autorun'])
-                server.run()
-                exit()
+            if MainProgram.config.autorun:
+                try:
+                    await MainProgram.autorun()
+                except:
+                    MainProgram.config.autorun = ''
+                    MainProgram.config.save_config()
+                    console.print('自动启动已取消并重置，如需再次启用请重新设置。')
+                    await asyncio.sleep(1)
             await MainProgram.mainMenu()
         except Exception as e:
             console.print('出现未知异常', e)
