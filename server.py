@@ -81,12 +81,16 @@ class Server(HSL):
                     run_command = f'{self.javaPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar forge-{mcVersion}-{forgeVersion}.jar'
         console.log(f'Run Command: {run_command}')
 
+        workdir = self.path
+        if self.config.direct_mode:
+            workdir = ''
+
         output_queue = Queue()
         input_queue = Queue()
 
         process = subprocess.Popen(
             run_command.split(" "),
-            cwd=self.path,
+            cwd=workdir,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
