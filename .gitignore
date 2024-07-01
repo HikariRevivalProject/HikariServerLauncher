@@ -15,6 +15,6 @@ dist/
 *.spec
 #venv
 .venv/
-test.py
+test*.py
 .gitignore
 .git/

@@ -1,7 +1,9 @@
-requests
 tqdm
-aioconsole
 rich
-noneprompt
+httpx
 psutil
+pyyaml
+requests
+noneprompt
+aioconsole
 javaproperties

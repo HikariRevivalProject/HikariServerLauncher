@@ -1,8 +1,10 @@
-import asyncio
 import os
 import re
-import time
+import yaml
+import asyncio
+import noneprompt
 import javaproperties
+
 from rich.console import Console
 
 from prompt import promptSelect, promptInput, promptConfirm
@@ -14,14 +16,14 @@ from java import Java
 
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
-OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器','退出']
+OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '退出']
 OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动','取消']
-
+OPTIONS_SETTINGS = ['调试模式','根目录模式','取消']
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
 HSL_NAME = 'Hikari Server Launcher'
 OS_MAXRAM = osfunc.getOSMaxRam()
-WIDTH = 1280
-HEIGHT = 720
+#WIDTH = 1280
+#HEIGHT = 720
 
 console = Console()
 
@@ -30,12 +32,7 @@ class Main(HSL):
         super().__init__()
         self.Workspace = Workspace()
         self.Java = Java()
-        try:
-            isOutdated, new = self.newVersionInfo
-            if isOutdated:
-                console.print(f'[bold magenta]发现新版本，版本号：[u]{new}[/u]，建议及时更新')
-        except:
-            pass
+        
     
     async def welcome(self):
         console.rule('配置设置')
@@ -49,7 +46,6 @@ class Main(HSL):
         self.config.save_config()
         console.rule('服务器创建')
         await self.create()
-        await self.mainMenu()
 
     async def create(self):
         serverName = await promptInput('请输入服务器名称:')
@@ -77,6 +73,8 @@ class Main(HSL):
         await self.Workspace.add(server)
     
     async def install(self, *, serverName: str, serverPath: str):
+        if self.config.direct_mode:
+            serverPath = ''
         serverJarPath = os.path.join(serverPath, 'server.jar')
         data = {}
         gameType = await promptSelect(OPTIONS_GAMETYPE, '请选择服务器类型:')
@@ -153,36 +151,35 @@ class Main(HSL):
         console.rule('服务器管理')
         index = await promptSelect([x['name'] for x in self.Workspace.workspaces], '选择服务器:')
         server = await self.Workspace.get(index)
-        choice = await promptSelect(OPTIONS_MANAGE, f'{server.name} - 请选择操作:')
-        if choice == 0:
+        index = await promptSelect(OPTIONS_MANAGE, f'{server.name} - 请选择操作:')
+        if index == 0:
             server.run()
-        elif choice == 1:
+        elif index == 1:
             try:
                 os.startfile(server.path)
             except:
                 console.print('[bold magenta]无法打开服务器目录。')
-        elif choice == 2:
+        elif index == 2:
             await self.editConfig(server)
-        elif choice == 3:
+        elif index == 3:
             cmd = await promptInput('请输入命令，将在服务器启动前在服务器目录执行:')
             await self.Workspace.modifyData(index, 'startup_cmd', cmd)
             console.print('[bold green]命令设置成功。')
-        elif choice == 4:
+        elif index == 4:
             console.print('[white bold]请输入JVM参数（包含横杠，例如-Xms1G，可多个），将在服务器启动时添加至启动参数内\n默认已设置-Dfile.encoding=utf-8以及-Xmx')
             jvm_setting = await promptInput('此为高级设置，若您不了解请勿随意填写:')
             await self.Workspace.modifyData(index, 'jvm_setting', jvm_setting)
             console.print('[bold green]JVM参数设置成功。')
-        elif choice == 5:
+        elif index == 5:
             if not await promptConfirm(f'!!! 确定要将 {server.name} 设为自动启动吗？'): return
             self.config.autorun = server.name
             self.config.save_config()
             console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
-            exit()
-        await self.mainMenu()
+
 
     async def editConfig(self, server: Server):
         console.print('[blue bold]读取特定配置索引:')
-        configs = get_configs()
+        configs = await get_configs()
         if not configs:
             console.print('[bold magenta]特定配置索引读取失败，请检查网络连接。')
             return
@@ -196,15 +193,16 @@ class Main(HSL):
                 console.print(f'[bold magenta]{config_info["name"]} - 配置文件不存在。')
                 continue
             
-            if config_info['type'] == 'properties':
-                with open(config_path, 'r') as f:
-                    config = javaproperties.load(f)
-                
-                console.print(f'[bold green]{config_info["name"]} - 读取成功。')
-                
-                if any(key_info['key'] in config for key_info in config_info['keys']):
-                    editableConfigs.append((config_info, config))
-        
+            with open(config_path, 'r') as f:
+                match config_info['type']:
+                    case 'properties':
+                        config = javaproperties.load(f)
+                    case 'yaml':
+                        config = yaml.safe_load(f)
+            console.print(f'[bold green]{config_info["name"]} - 读取成功。')
+            
+            if any(key_info['key'] in config for key_info in config_info['keys']):
+                editableConfigs.append((config_info, config))
         if not editableConfigs:
             console.print('[bold magenta]没有可编辑的配置文件。')
             return
@@ -233,7 +231,7 @@ class Main(HSL):
                 key, _ = editableKeys[editKeyIndex]
                 key_info = editConfig['keys'][editKeyIndex]
                 key_danger, key_tips = key_info['danger'], key_info['tips']
-                console.print(key_tips)
+                console.print(f'[bold white]Tips: {key_tips}')
                 if key_danger:
                     console.print(f'[bold red]这是一个危险配置！修改前请三思！')
                 if key_info['type'] == "int":
@@ -244,62 +242,85 @@ class Main(HSL):
                     editValue = 'true' if await promptConfirm('请选择新值:') else 'false'
                 
                 config[key] = editValue
-                if editConfig['type'] == 'properties':
-                    with open(os.path.join(server.path, editConfig['path']), 'w', encoding='utf-8') as f:
-                        javaproperties.dump(config, f)
+                with open(os.path.join(server.path, editConfig['path']), 'w', encoding='utf-8') as f:
+                    match editConfig['type']:
+                        case 'properties':
+                            javaproperties.dump(config, f)
+                        case 'yaml':
+                            yaml.dump(config, f)
 
-    
     async def delete(self):
         console.rule('服务器删除')
         if not self.Workspace.workspaces:
             console.print('没有服务器。')
-            await self.mainMenu()
         
         index = await promptSelect([x['name'] for x in self.Workspace.workspaces], '请选择要删除的服务器:')
         if await promptConfirm('确定要删除吗?'):
             await self.Workspace.delete(index)
-        
-        await self.mainMenu()
     
+    async def setting(self):
+        console.rule('设置')
+        index = await promptSelect(OPTIONS_SETTINGS, '设置：')
+        if index == 0:
+            self.config.debug = await promptConfirm('开启调试模式？')
+            self.config.save_config()
+        if index == 1:
+            self.config.direct_mode = await promptConfirm('开启根目录模式？安装服务器将直接安装在当前目录下。')
+        elif index == len(OPTIONS_SETTINGS) - 1: 
+            return
     async def mainMenu(self):
         console.clear()
-        console.rule(f'Hikari Server Launcher v{str(self.version/10)}')
-        console.print('[bold gold]欢迎使用 Hikari Server Launcher.')
-        choice = await promptSelect(OPTIONS_MENU, '菜单：')
-        if choice == 0:
-            await self.create()
-        elif choice == 1:
-            await self.manage()
-        elif choice == 2:
-            await self.delete()
-        elif choice == 3:
-            exit(0)
-        else:
-            raise NotImplementedError('你怎么会选择到这里呢？')
+        console.rule(f'{HSL_NAME} v{str(self.version/10)}')
+        while True:
+            console.print(f'[bold gold]欢迎使用 {HSL_NAME}.')
+            index = await promptSelect(OPTIONS_MENU, '菜单：')
+            if index == 0:
+                await self.create()
+            elif index == 1:
+                await self.manage()
+            elif index == 2:
+                await self.delete()
+            elif index == 3:
+                await self.setting()
+            elif index == len(OPTIONS_MENU) - 1:
+                return
     async def autorun(self):
         server = await self.Workspace.getFromName(self.config.autorun)
         console.print(f'[bold blue]将于三秒后启动 {server.name}。，键入Ctrl+C(^C)可取消.')
-        time.sleep(3)
+        await asyncio.sleep(3)
         server.run()
         exit()
 
+mainProgram = Main()
 async def main():
-    MainProgram = Main()
-    if MainProgram.config.first_run:
-        await MainProgram.welcome()
+    isOutdated, new = mainProgram.newVersionInfo
+    if isOutdated:
+        console.print(f'[bold magenta]发现新版本，版本号：[u]{new/10}[/u]，建议及时更新')
+        await asyncio.sleep(3)
+    if mainProgram.config.first_run:
+        await mainProgram.welcome()
     else:
-        try:
-            if MainProgram.config.autorun:
-                try:
-                    await MainProgram.autorun()
-                except:
-                    MainProgram.config.autorun = ''
-                    MainProgram.config.save_config()
-                    console.print('自动启动已取消并重置，如需再次启用请重新设置。')
-                    await asyncio.sleep(1)
-            await MainProgram.mainMenu()
-        except Exception as e:
-            console.print('出现未知异常', e)
+        if mainProgram.config.autorun:
+            try:
+                loop = asyncio.get_event_loop()
+                task = loop.create_task(mainProgram.autorun())
+                await asyncio.wait_for(task,None)
+            except KeyboardInterrupt and asyncio.CancelledError:
+                mainProgram.config.autorun = ''
+                mainProgram.config.save_config()
+                console.print('自动启动已取消并重置，如需再次启用请重新设置。')
+                await asyncio.sleep(1)
+        await mainProgram.mainMenu()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except SystemExit:
+        pass
+    except noneprompt.CancelledError:
+        console.print('[bold green]用户取消操作，已退出。')
+    except Exception as e:
+        if mainProgram.config.debug:
+            console.print_exception()
+        else:
+            console.print(f'[bold red]发生未知错误: {e}')

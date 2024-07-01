@@ -1,6 +1,8 @@
 import os
 import zipfile
+
 from utils.download import downloadFile
+
 from hsl import HSL
 
 
@@ -9,9 +11,15 @@ if os.name == 'nt':
 elif os.name == 'posix':
     JAVA_EXEC = 'java'
 class Java(HSL):
+
     def __init__(self):
         super().__init__()
-    async def getJavaVersion(self,mcVersion) -> str:
+    async def getJavaVersion(self,mcVersion: str) -> str:
+        '''
+        get java version
+        :param mcVersion: minecraft version
+        :return: java version
+        '''
         parts = mcVersion.split('.')
         version = int(parts[1])
         if version <= 6:
@@ -27,12 +35,24 @@ class Java(HSL):
         else:
             return '0'
     async def checkJavaExist(self,javaVersion,path) -> bool:
+        '''
+        check java exist
+        :param javaVersion: java version
+        :param path: path
+        :return: exist? bool
+        '''
         if not os.path.exists(os.path.join(path,'java',javaVersion,'bin')):
             return False
         return True
-    async def downloadJava(self,javaVersion,path):
+    async def downloadJava(self,javaVersion,path) -> bool:
+        '''
+        download java
+        :param javaVersion: java version
+        :param path: path
+        :return: done? bool
+        '''
         sources = self.source['java']['list']
-        if self.config['use_mirror']:
+        if self.config.use_mirror:
             sources = sources[::-1]
         path = os.path.join(path,'java',javaVersion)
         filename = os.path.join(path,'java.zip')
@@ -46,12 +66,19 @@ class Java(HSL):
             if os.name == 'posix':
                 url = i['linux'][javaVersion]
             if downloadFile(url,filename):
-                break
-        #unzip java.zip
-        with zipfile.ZipFile(filename,'r') as file:
-            file.extractall(path)
-        os.remove(filename)
-    async def getJavaByGameVersion(self, mcVersion: str, path: str):
+                with zipfile.ZipFile(filename,'r') as file:
+                    file.extractall(path)
+                os.remove(filename)
+                return True
+        return False
+        
+    async def getJavaByGameVersion(self, mcVersion: str, path: str) -> str:
+        """
+        get java path by game version
+        :param mcVersion: minecraft version
+        :param path: path
+        :return: java exec path
+        """
         javaVersion = await self.getJavaVersion(mcVersion)
         javaPath = os.path.join(path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion, path):
@@ -60,6 +87,12 @@ class Java(HSL):
         return os.path.join(javaPath, 'bin', JAVA_EXEC)
 
     async def getJavaByJavaVersion(self, javaVersion:str, path:str) -> str:
+        """
+        get java path by java version
+        :param javaVersion: java version
+        :param path: path
+        :return: java exec path
+        """
         javaPath = os.path.join(path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion, path):
             print(f'Java版本 {javaVersion} 不存在。正在下载Java...')

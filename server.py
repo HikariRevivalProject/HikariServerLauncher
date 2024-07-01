@@ -1,9 +1,11 @@
 import os
-import subprocess
-from rich.console import Console
-from threading import Thread
 import psutil
+import subprocess
+from threading import Thread
+
 from queue import Queue
+from rich.console import Console
+
 from hsl import HSL
 
 console = Console()

@@ -1,4 +1,4 @@
-from hsl import HSL
+from hsl import HSL # type: ignore
 import json
 import os
 import shutil
