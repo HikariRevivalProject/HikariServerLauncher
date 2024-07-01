@@ -263,11 +263,11 @@ class Main(HSL):
         index = await promptSelect(OPTIONS_SETTINGS, '设置：')
         if index == 0:
             self.config.debug = await promptConfirm('开启调试模式？')
-            self.config.save_config()
         if index == 1:
             self.config.direct_mode = await promptConfirm('开启根目录模式？安装服务器将直接安装在当前目录下。')
         elif index == len(OPTIONS_SETTINGS) - 1: 
             return
+        self.config.save_config()
     async def mainMenu(self):
         console.clear()
         console.rule(f'{HSL_NAME} v{str(self.version/10)}')

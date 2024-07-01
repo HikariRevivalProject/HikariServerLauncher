@@ -82,19 +82,24 @@ class Server(HSL):
         console.log(f'Run Command: {run_command}')
 
         workdir = self.path
-        if self.config.direct_mode:
-            workdir = ''
 
         output_queue = Queue()
         input_queue = Queue()
-
-        process = subprocess.Popen(
-            run_command.split(" "),
-            cwd=workdir,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
+        if self.config.direct_mode:
+            process = subprocess.Popen(
+                run_command.split(" "),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+        else:
+            process = subprocess.Popen(
+                run_command.split(" "),
+                cwd=workdir,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
 
         
         t2 = Thread(target=self.input, args=(process, input_queue))
