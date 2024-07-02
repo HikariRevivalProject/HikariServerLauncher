@@ -10,10 +10,18 @@ if os.name == 'nt':
     JAVA_EXEC = 'java.exe'
 elif os.name == 'posix':
     JAVA_EXEC = 'java'
+async def recursive_chmod(directory, mode):
+    for root, dirs, files in os.walk(directory):
+        for d in dirs:
+            os.chmod(os.path.join(root, d), mode)
+        for f in files:
+            os.chmod(os.path.join(root, f), mode)
+
 class Java(HSL):
 
     def __init__(self):
         super().__init__()
+    
     async def getJavaVersion(self,mcVersion: str) -> str:
         '''
         get java version
@@ -68,6 +76,7 @@ class Java(HSL):
             if downloadFile(url,filename):
                 with zipfile.ZipFile(filename,'r') as file:
                     file.extractall(path)
+                await recursive_chmod(path,0o755)
                 os.remove(filename)
                 return True
         return False

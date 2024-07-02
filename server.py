@@ -14,6 +14,10 @@ class Server(HSL):
     """
     Server Class
     """
+
+    def pathJoin(self,path: str):
+        return os.path.join(self.path,path)
+    
     def readLine(self, process, output_queue: Queue):
         for line in iter(process.stdout.readline, b''):
             try:
@@ -47,6 +51,7 @@ class Server(HSL):
 
     def check_process(self, process):
         return psutil.pid_exists(process.pid)
+
     def __init__(self, *, name: str, type: str, path: str, javaPath: str, maxRam: str, data={}):
         super().__init__()
         self.name = name
@@ -58,27 +63,29 @@ class Server(HSL):
     def run(self):
         if 'startup_cmd' in self.data:
             subprocess.Popen(self.data['startup_cmd'],cwd=self.path)
+
         jvm_setting: str = ''
         if 'jvm_setting' in self.data:
             jvm_setting: str = ' ' + self.data['jvm_setting']
+        
+        if os.name == 'posix':
+            javaexecPath = r'./../../' + self.javaPath if not self.config.direct_mode else r'./' + self.javaPath
+        else:
+            javaexecPath = self.javaPath
         match self.type:
-            case 'vanilla':
-                run_command = f'{self.javaPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar server.jar'
-            case 'paper':
-                run_command = f'{self.javaPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar server.jar'
-            case 'fabric':
-                run_command = f'{self.javaPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar server.jar'
+            case 'vanilla' | 'paper' | 'fabric':
+                run_command = f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar server.jar'
             case 'forge':
                 mcVersion = self.data['mcVersion']
                 forgeVersion = self.data['forgeVersion']
                 mcMajorVersion = int(mcVersion.split('.')[1])
                 if mcMajorVersion >= 17:
                     if os.name == 'nt':
-                        run_command = f'{self.javaPath}{jvm_setting} -Dfile.encoding=utf-8 -Xmx{self.maxRam} @user_jvm_args.txt @libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/win_args.txt %*'
+                        run_command = f'{javaexecPath}{jvm_setting} -Dfile.encoding=utf-8 -Xmx{self.maxRam} @user_jvm_args.txt @libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/win_args.txt %*'
                     else:
-                        run_command = f'{self.javaPath}{jvm_setting} -Dfile.encoding=utf-8 -Xmx{self.maxRam} @user_jvm_args.txt @libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/unix_args.txt %*'
+                        run_command = f'{javaexecPath}{jvm_setting} -Dfile.encoding=utf-8 -Xmx{self.maxRam} @user_jvm_args.txt @libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/unix_args.txt %*'
                 if mcMajorVersion < 17:
-                    run_command = f'{self.javaPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar forge-{mcVersion}-{forgeVersion}.jar'
+                    run_command = f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar forge-{mcVersion}-{forgeVersion}.jar'
         console.log(f'Run Command: {run_command}')
 
         workdir = self.path
