@@ -13,17 +13,19 @@ from hsl import HSL, get_configs
 from server import Server
 from workspace import Workspace
 from java import Java
+import gui
+
 
 OPTIONS_YN = ['是', '否']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
-OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动','取消']
+OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '高级选项', '退出']
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本' ,'取消']
 OPTIONS_SETTINGS = ['调试模式','根目录模式','取消']
+OPTIONS_ADVANCED = ['GUI测试', '取消']
+OPTIONS_SCRIPT_TYPE = ['相对路径', '绝对路径', '取消']
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
 HSL_NAME = 'Hikari Server Launcher'
 OS_MAXRAM = osfunc.getOSMaxRam()
-#WIDTH = 1280
-#HEIGHT = 720
 
 console = Console()
 
@@ -175,7 +177,8 @@ class Main(HSL):
             self.config.autorun = server.name
             self.config.save_config()
             console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
-
+        elif index == 6:
+            type = await promptSelect(OPTIONS_SCRIPT_TYPE, '请选择导出脚本类型:')
 
     async def editConfig(self, server: Server):
         console.print('[blue bold]读取特定配置索引:')
@@ -268,6 +271,13 @@ class Main(HSL):
         elif index == len(OPTIONS_SETTINGS) - 1: 
             return
         self.config.save_config()
+    
+    async def advanced_options(self):
+        index = await promptSelect(OPTIONS_ADVANCED, '高级选项：')
+        if index == 0:
+            await gui.init()
+        if index == len(OPTIONS_ADVANCED) - 1: 
+            return
     async def mainMenu(self):
         console.clear()
         console.rule(f'{HSL_NAME} v{str(self.version/10)}')
@@ -282,6 +292,8 @@ class Main(HSL):
                 await self.delete()
             elif index == 3:
                 await self.setting()
+            elif index == 4:
+                await self.advanced_options()
             elif index == len(OPTIONS_MENU) - 1:
                 return
     async def autorun(self):

@@ -18,3 +18,5 @@ dist/
 test*.py
 .gitignore
 .git/
+.ssh/
+.cache/
