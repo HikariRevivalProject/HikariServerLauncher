@@ -243,21 +243,25 @@ class Main(HSL):
                 continue
             
             with open(config_path, 'r') as f:
+                print(config_path)
                 config = self.load_config_file(config_info, f)
+                print(config)
             console.print(f'[bold green]{config_info["name"]} - 读取成功。')
-            
             if any(self.get_nested_value(config, key_info['key'].split('.')) is not None for key_info in config_info['keys']):
-                editableConfigs.append((config_info, config))
+                editableConfigs.append((config_info,config))
+                #console.print(editableConfigs)
         return editableConfigs
 
     def load_config_file(self, config_info: dict, f):
         if config_info['type'] == 'properties':
             return javaproperties.load(f)
-        elif config_info['type'] == 'yaml':
-            return yaml.safe_load(f)
+        elif config_info['type'] == 'yml':
+            return yaml.full_load(f)
         return {}
 
-    def get_nested_value(self, config, keys):
+    def get_nested_value(self, config: dict, keys: list):
+        #console.print(keys)
+        #console.print(config)
         for key in keys:
             config = config.get(key, None)
             if config is None:
@@ -314,15 +318,15 @@ class Main(HSL):
             if editConfig['type'] == 'properties':
                 return 'true' if await promptConfirm('请选择新值:') else 'false'
             return await promptConfirm('请选择新值:')
-
         return None
 
     def save_config_file(self, editConfig, config, server_path):
         config_path = os.path.join(server_path, *editConfig['path'].split('/'))
+
         with open(config_path, 'w', encoding='utf-8') as f:
             if editConfig['type'] == 'properties':
                 javaproperties.dump(config, f)
-            elif editConfig['type'] == 'yaml':
+            elif editConfig['type'] == 'yml':
                 yaml.dump(config, f)
 
     async def delete(self):

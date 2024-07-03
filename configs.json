@@ -4,7 +4,7 @@
         "name": "server.properties",
         "?name": "! 配置文件显示在编辑处的名字",
         "path": "server.properties",
-        "?path": "! 配置文件的路径，目前只支持根目录下",
+        "?path": "! 配置文件的路径，子路径使用单个左斜线(/)分割",
         "description": "Minecraft服务器基本配置文件 包含端口，人数，正版等",
         "?description": "! 关于配置文件的介绍",
         "type": "properties",
@@ -13,8 +13,9 @@
             {
                 "name": "服务器端口",
                 "key": "server-port",
+                "?key": "配置键的名称，如果有嵌套用单个点号(.)分割",
                 "description": "服务器将监听的端口（默认：25565）",
-                "tips": "",
+                "tips": "只有你确定才要更改...",
                 "?tips": "提示，若设置将会在用户编辑时显示",
                 "type": "int",
                 "?type": "! 可以为int str bool",
@@ -121,13 +122,9 @@
     },
     {
         "name": "bukkit.yml",
-        "?name": "! 配置文件显示在编辑处的名字",
         "path": "bukkit.yml",
-        "?path": "! 配置文件的路径，目前只支持根目录下",
         "description": "Bukkit架构插件服 根本配置文件",
-        "?description": "! 关于配置文件的介绍",
         "type": "yml",
-        "?type": "! 配置文件类型，目前只支持properties，对应.properties文件",
         "keys": [
             {
                 "name": "允许末地",
@@ -152,6 +149,62 @@
                 "tips": "服又无了？",
                 "type": "str",
                 "danger": false
+            }
+        ]
+    },
+    {
+        "name": "Paper 世界设置",
+        "path": "config/paper-world-defaults.yml",
+        "description": "Paper世界设置",
+        "type": "yml",
+        "keys": [
+            {
+                "name": "反矿透",
+                "key": "anticheat.anti-xray.enabled",
+                "description": "是否启用反矿透？",
+                "tips": "较为消耗服务器内存资源",
+                "type": "bool",
+                "danger": false
+            },
+            {
+                "name": "反矿透引擎模式",
+                "key": "anticheat.anti-xray.engine-mode",
+                "description": "反矿透引擎模式（1,2：减少可见量，3：暴力填充混淆）",
+                "tips": "较为消耗服务器内存资源",
+                "type": "int",
+                "danger": false
+            }
+        ]
+    },
+    {
+        "name": "Paper 总设置",
+        "path": "config/paper-global.yml",
+        "description": "Paper总设置",
+        "type": "yml",
+        "keys": [
+            {
+                "name": "启用玩家碰撞",
+                "key": "collisions.enable-player-collisions",
+                "description": "玩家是否碰撞？",
+                "tips": "当你被别人挤下悬崖时...",
+                "type": "bool",
+                "danger": false
+            },
+            {
+                "name": "区块系统IO线程数",
+                "key": "chunk-system.io-threads",
+                "description": "区块系统IO线程数（-1自动）",
+                "tips": "取决于核心数，建议设为自动分配",
+                "type": "int",
+                "danger": true
+            },
+            {
+                "name": "区块系统工作线程数",
+                "key": "chunk-system.worker-threads",
+                "description": "区块系统工作线程数（-1自动）",
+                "tips": "取决于核心数，建议设为自动分配",
+                "type": "int",
+                "danger": true
             }
         ]
     }
