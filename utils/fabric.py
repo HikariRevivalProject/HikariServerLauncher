@@ -1,7 +1,7 @@
 import requests
 from utils.download import downloadFile
 
-async def getMcVersions(source) -> list:
+async def getMcVersions(source: dict) -> list:
     sources = source["fabric"]['list']
     for source in sources:
         if source['type'] == "official":
@@ -13,7 +13,7 @@ async def getMcVersions(source) -> list:
             except:
                 pass
     return []
-async def getLoaderVersion(source) -> str:
+async def getLoaderVersion(source: dict) -> str:
     sources = source["fabric"]['list']
     for source in sources:
         if source['type'] == "official":
@@ -25,7 +25,12 @@ async def getLoaderVersion(source) -> str:
             except:
                pass
     return ''
-async def downloadServer(source,path,mcVersion,loaderVersion) -> bool:
+async def downloadServer(
+        source: dict,
+        path: str,
+        mcVersion: str,
+        loaderVersion: str
+    ) -> bool:
     sources = source["fabric"]['list']
     for source in sources:
         if source['type'] == "official":

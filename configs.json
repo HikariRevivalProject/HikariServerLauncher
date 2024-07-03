@@ -118,5 +118,41 @@
                 "danger": false
             }
         ]
+    },
+    {
+        "name": "bukkit.yml",
+        "?name": "! 配置文件显示在编辑处的名字",
+        "path": "bukkit.yml",
+        "?path": "! 配置文件的路径，目前只支持根目录下",
+        "description": "Bukkit架构插件服 根本配置文件",
+        "?description": "! 关于配置文件的介绍",
+        "type": "yml",
+        "?type": "! 配置文件类型，目前只支持properties，对应.properties文件",
+        "keys": [
+            {
+                "name": "允许末地",
+                "key": "settings.allow-end",
+                "description": "服务器是否允许进入末地？（默认：是）",
+                "tips": "没有末地需求的小游戏服可以关闭此项",
+                "type": "bool",
+                "danger": false
+            },
+            {
+                "name": "过载警告",
+                "key": "settings.warn-on-overload",
+                "description": "服务器过载时是否警告？（默认：是）",
+                "tips": "眼不见心不烦",
+                "type": "bool",
+                "danger": false
+            },
+            {
+                "name": "关服文本",
+                "key": "settings.shutdown-message",
+                "description": "服务器关服的提示文本",
+                "tips": "服又无了？",
+                "type": "str",
+                "danger": false
+            }
+        ]
     }
 ]

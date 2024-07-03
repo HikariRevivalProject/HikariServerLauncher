@@ -8,12 +8,15 @@ from config import Config
 
 console = Console()
 
-HSL_VERSION = 13
+HSL_VERSION = 14
 DOWNLOAD_SOURCE = r'https://hsl.hikari.bond/source.json'
 CONFIGS_SOURCE = r'https://hsl.hikari.bond/configs.json'
 VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 
-async def make_request(url: str, error_message: str, timeout: int = 3) -> dict:
+async def make_request(url: str, 
+                       error_message: 
+                       str, timeout: int = 3
+    ) -> dict:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url, timeout=timeout)

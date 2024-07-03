@@ -3,7 +3,6 @@ from tqdm import tqdm
 from rich.console import Console
 console = Console()
 def downloadFile(url: str, save_path: str, params=None):
-    console.log(url)
     try:
         if params:
             console.log(params)
