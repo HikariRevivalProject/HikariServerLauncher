@@ -154,13 +154,13 @@ class Main(HSL):
 
         return serverName, serverType, serverPath, javaPath, data
 
-    async def install_fabric(self, serverName, serverPath, data):
+    async def install_fabric(self, serverName, serverPath, serverJarPath, data):
         serverType = 'fabric'
         fabVersion = await fabric.getMcVersions(self.source)
         mcVersion = fabVersion[await promptSelect(fabVersion, '请选择 Fabric 服务器版本:')]
         javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
         loaderVersion = await fabric.getLoaderVersion(self.source)
-        if not await fabric.downloadServer(self.source, os.path.join(serverPath, 'server.jar'), mcVersion, loaderVersion):
+        if not await fabric.downloadServer(self.source, serverJarPath, mcVersion, loaderVersion):
             console.print('Fabric 服务端下载失败。')
             return False
         console.print('Fabric 服务端下载完成。')
@@ -362,7 +362,7 @@ class Main(HSL):
         
         advanced_methods = {
             0: lambda: gui.init(),
-            len(OPTIONS_ADVANCED) - 1: lambda: None
+            len(OPTIONS_ADVANCED) - 1: lambda: self.exit()
         }
         await advanced_methods.get(index, lambda: None)()
     
