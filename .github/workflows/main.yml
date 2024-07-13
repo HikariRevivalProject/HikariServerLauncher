@@ -15,30 +15,45 @@ jobs:
         os: [windows-latest, ubuntu-latest]
         python_version: ['3.10.11']
     runs-on: ${{ matrix.os }}
+
     steps:
+      - name: Set environment variables based on OS
+        run: |
+          echo "EXE_NAME=$(echo ${{ runner.os == 'Windows_NT' && 'HikariServerLauncher-${{ vars.VERSION }}.exe' || 'HikariServerLauncher-${{ vars.VERSION }}_linux' }})" >> $GITHUB_ENV
+          echo "LOCAL_DIR=$(echo ${{ runner.os == 'Windows_NT' && './dist/HikariServerLauncher-${{ vars.VERSION }}.exe' || './dist/HikariServerLauncher-${{ vars.VERSION }}_linux' }})" >> $GITHUB_ENV
+          echo "REMOTE_DIR=$(echo ${{ runner.os == 'Windows_NT' && '${{ secrets.REMOTEPATH }}' || '${{ secrets.REMOTEPATH_LINUX }}' }})" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: PyInstaller Action
         uses: Martin005/pyinstaller-action@v1.2.0
         with:
           spec: main.py
           requirements: requirements.txt
-          options: -F -i HSL.ico --name=${{ runner.os == 'Windows_NT' && 'HikariServerLauncher-${{ vars.VERSION }}.exe' || 'HikariServerLauncher-${{ vars.VERSION }}_linux' }}
-          python_ver: 3.10.11
+          options: -F -i HSL.ico --name=${{ env.EXE_NAME }}
+          python_ver: ${{ matrix.python_version }}
           python_arch: x64
           exe_path: ./dist
-          upload_exe_with_name: ${{ runner.os == 'Windows_NT' && './dist/HikariServerLauncher-${{ vars.VERSION }}.exe' || './dist/HikariServerLauncher-${{ vars.VERSION }}_linux' }}
+          upload_exe_with_name: ${{ env.LOCAL_DIR }}
+
       - name: EXE Upload to website
         if: success()
         uses: wangyucode/sftp-upload-action@v2.0.2
         with:
-          # Host to login
           host: ${{ secrets.HOST }}
-          # Port to login
           port: ${{ secrets.PORT }}
-          # Username to login
           username: root
-          # Passwort to login
           password: ${{ secrets.PASSWORD }}
-          # Local file or directory
-          localDir: ${{ runner.os == 'Windows_NT' && './dist/HikariServerLauncher-${{ vars.VERSION }}.exe' || './dist/HikariServerLauncher-${{ vars.VERSION }}' }}
-          # Remote file or directory path (file or directories will be created)
-          remoteDir: ${{ runner.os == 'Windows_NT' && '${{ secrets.REMOTEPATH }}' || '${{ secrets.REMOTEPATH_LINUX }}' }}
+          localDir: ${{ env.LOCAL_DIR }}
+          remoteDir: ${{ env.REMOTE_DIR }}
