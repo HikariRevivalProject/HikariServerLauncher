@@ -1,4 +1,4 @@
-name: HikariServerLauncher Build
+name: HikariServerLauncher Build(Windows)
 
 on:
   push:
@@ -24,8 +24,8 @@ jobs:
           options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}.exe
           python_ver: 3.10.11
           python_arch: x64
-          exe_path: ./dist
-          upload_exe_with_name: ./dist/HikariServerLauncher-${{ vars.VERSION }}.exe
+          exe_path: .\dist
+          upload_exe_with_name: .\dist\HikariServerLauncher-${{ vars.VERSION }}.exe
 
       - name: EXE Upload to website
         if: success()
@@ -35,5 +35,5 @@ jobs:
           port: ${{ secrets.PORT }}
           username: root
           password: ${{ secrets.PASSWORD }}
-          localDir: ./dist/HikariServerLauncher-${{ vars.VERSION }}.exe
+          localDir: .\dist\HikariServerLauncher-${{ vars.VERSION }}.exe
           remoteDir: ${{ secrets.REMOTEPATH }}
