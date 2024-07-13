@@ -19,9 +19,12 @@ jobs:
     steps:
       - name: Set environment variables based on OS
         run: |
-          echo "EXE_NAME=$(echo ${{ runner.os == 'Windows_NT' && 'HikariServerLauncher-${{ vars.VERSION }}.exe' || 'HikariServerLauncher-${{ vars.VERSION }}_linux' }})" >> $GITHUB_ENV
-          echo "LOCAL_DIR=$(echo ${{ runner.os == 'Windows_NT' && './dist/HikariServerLauncher-${{ vars.VERSION }}.exe' || './dist/HikariServerLauncher-${{ vars.VERSION }}_linux' }})" >> $GITHUB_ENV
-          echo "REMOTE_DIR=$(echo ${{ runner.os == 'Windows_NT' && '${{ secrets.REMOTEPATH }}' || '${{ secrets.REMOTEPATH_LINUX }}' }})" >> $GITHUB_ENV
+          EXE_NAME="${{ runner.os == 'Windows_NT' && 'HikariServerLauncher-${{ vars.VERSION }}.exe' || 'HikariServerLauncher-${{ vars.VERSION }}_linux' }}"
+          LOCAL_DIR="${{ runner.os == 'Windows_NT' && './dist/HikariServerLauncher-${{ vars.VERSION }}.exe' || './dist/HikariServerLauncher-${{ vars.VERSION }}_linux' }}"
+          REMOTE_DIR="${{ runner.os == 'Windows_NT' && '${{ secrets.REMOTEPATH }}' || '${{ secrets.REMOTEPATH_LINUX }}' }}"
+          echo "EXE_NAME=$EXE_NAME" >> $GITHUB_ENV
+          echo "LOCAL_DIR=$LOCAL_DIR" >> $GITHUB_ENV
+          echo "REMOTE_DIR=$REMOTE_DIR" >> $GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v3
