@@ -7,13 +7,14 @@ import javaproperties
 from typing import Callable
 from rich.console import Console
 
-from prompt import promptSelect, promptInput, promptConfirm
-from utils import vanilla, paper, forge, fabric, osfunc
+from gametypes import fabric, forge, paper, vanilla
+from utils.prompt import promptSelect, promptInput, promptConfirm
+from utils import osfunc
 from hsl import HSL, get_configs
 from server import Server
 from workspace import Workspace
 from java import Java
-import gui
+import utils.gui as gui
 
 
 OPTIONS_YN = ['是', '否']
@@ -35,6 +36,9 @@ class Main(HSL):
         self.Java = Java()
         
     async def welcome(self):
+        """
+            Welcome
+        """
         console.rule('配置设置')
         console.print('如果你的服务器环境在国内, 推荐使用镜像源源以获得更好的速度。\n是否使用镜像源优先? (默认: 否)\n')
         self.config.use_mirror = await promptConfirm('是否使用镜像源优先?')
@@ -46,9 +50,13 @@ class Main(HSL):
         await self.create()
     
     async def exit(self):
-        exit()
+        #exit the program
+        os._exit(0)
 
     async def create(self):
+        """
+            Create server
+        """
         serverName = await self.get_valid_server_name()
         if not serverName:
             console.print('[bold magenta]服务器已存在。')
@@ -63,11 +71,16 @@ class Main(HSL):
         
         serverName, serverType, serverPath, javaPath, data = server_setting
         maxRam = await self.get_valid_max_ram()
-        
+        if maxRam is None:
+            maxRam = str(OS_MAXRAM) + 'M'
         server = Server(name=serverName, type=serverType, path=serverPath, javaPath=javaPath, maxRam=maxRam, data=data)
         await self.Workspace.add(server)
 
-    async def get_valid_server_name(self):
+    async def get_valid_server_name(self) -> str | None:
+        """
+            Get valid server name
+            Return: str | None
+        """
         serverName = await promptInput('请输入服务器名称:')
         while (not serverName.strip()) or (serverName in ['con','aux','nul','prn'] and os.name == 'nt'):
             serverName = await promptInput('名称非法，请重新输入:')
@@ -77,13 +90,30 @@ class Main(HSL):
             return None
         return serverName
     
-    async def get_valid_max_ram(self):
+    async def get_valid_max_ram(self) -> str | None:
+        """
+            Get valid max ram
+            Return: str | None
+        """
         maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
         while not MAXRAM_PATTERN.match(maxRam):
             maxRam = await promptInput('输入错误，请重新输入:')
         return maxRam
 
     async def install(self, *, serverName: str, serverPath: str):
+        """
+            Install the server
+            Args: 
+                serverName: str
+                serverPath: str
+        
+            Returns: 
+                serverName, 
+                serverPath, 
+                serverJarPath, 
+                data
+        """
+
         if self.config.direct_mode:
             serverPath = ''
         serverJarPath = os.path.join(serverPath, 'server.jar')
@@ -100,7 +130,7 @@ class Main(HSL):
         }
         return await install_methods[gameType](serverName, serverPath, serverJarPath, data)
     
-    async def install_vanilla(self, serverName, serverPath, serverJarPath, data):
+    async def install_vanilla(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):
         serverType = 'vanilla'
         mcVersions = [x['id'] for x in await vanilla.get_versions(self.source) if x['type'] == 'release']
         mcVersion = mcVersions[await promptSelect(mcVersions, '请选择Minecraft服务器版本:')]
@@ -112,7 +142,7 @@ class Main(HSL):
         console.print('Vanilla 服务端下载完成。')
         return serverName, serverType, serverPath, javaPath, data
 
-    async def install_paper(self, serverName, serverPath, serverJarPath, data):
+    async def install_paper(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):
         serverType = 'paper'
         mcVersion = await paper.getLatestVersionName(self.source)
         javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
@@ -122,7 +152,7 @@ class Main(HSL):
         console.print('Paper 服务端下载完成。')
         return serverName, serverType, serverPath, javaPath, data
 
-    async def install_forge(self, serverName, serverPath, serverJarPath, data):
+    async def install_forge(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):
         serverType = 'forge'
         mcVersions = await vanilla.get_versions(self.source)
         _mcVersions = await forge.get_mcversions(self.source, self.config.use_mirror)
@@ -154,7 +184,7 @@ class Main(HSL):
 
         return serverName, serverType, serverPath, javaPath, data
 
-    async def install_fabric(self, serverName, serverPath, serverJarPath, data):
+    async def install_fabric(self, serverName: str, serverPath: str, serverJarPath: str, data: str):
         serverType = 'fabric'
         fabVersion = await fabric.getMcVersions(self.source)
         mcVersion = fabVersion[await promptSelect(fabVersion, '请选择 Fabric 服务器版本:')]
@@ -373,7 +403,7 @@ class Main(HSL):
             console.print(f'[bold gold]欢迎使用 {HSL_NAME}.')
             index = await promptSelect(OPTIONS_MENU, '菜单：')
             
-            menu_methods = {
+            menu_methods: dict[int, Callable] = {
                 0: lambda: self.create(),
                 1: lambda: self.manage(),
                 2: lambda: self.delete(),
@@ -387,7 +417,7 @@ class Main(HSL):
         server = await self.Workspace.getFromName(self.config.autorun)
         console.print(f'[bold blue]将于三秒后启动 {server.name}。，键入Ctrl+C(^C)可取消.')
         await asyncio.sleep(3)
-        server.run()
+        await server.run()
         exit()
 
 mainProgram = Main()

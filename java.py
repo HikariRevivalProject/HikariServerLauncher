@@ -1,16 +1,24 @@
 import os
 import zipfile
-
-from utils.download import downloadFile
-
 from hsl import HSL
+from utils.download import downloadFile
 
 
 if os.name == 'nt':
     JAVA_EXEC = 'java.exe'
+    # Windows
 elif os.name == 'posix':
     JAVA_EXEC = 'java'
+    # Linux
 async def recursive_chmod(directory, mode):
+    """
+        Recursively change the permissions of a directory and its contents.
+        for Linux.
+        Args: 
+            directory(str):  directory path
+            mode(int):  permission mode
+    """
+
     for root, dirs, files in os.walk(directory):
         for d in dirs:
             os.chmod(os.path.join(root, d), mode)
@@ -23,11 +31,15 @@ class Java(HSL):
         super().__init__()
     
     async def getJavaVersion(self,mcVersion: str) -> str:
-        '''
-        get java version
-        :param mcVersion: minecraft version
-        :return: java version
-        '''
+        """
+            Get java version by game version.
+
+            Args: 
+                mcVersion(int):  mc version
+        
+            Returns: 
+                str: java version should be used
+        """
         parts = mcVersion.split('.')
         version = int(parts[1])
         if version <= 6:
@@ -43,22 +55,30 @@ class Java(HSL):
         else:
             return '0'
     async def checkJavaExist(self,javaVersion,path) -> bool:
-        '''
-        check java exist
-        :param javaVersion: java version
-        :param path: path
-        :return: exist? bool
-        '''
+        """
+            Check if Java exists.
+            Args: 
+                javaVersion(int):  Java version
+                path(str):  workspace path
+        
+            Returns: 
+                bool: True if the java exists, False otherwise.
+        """
+
         if not os.path.exists(os.path.join(path,'java',javaVersion,'bin')):
             return False
         return True
-    async def downloadJava(self,javaVersion,path) -> bool:
-        '''
-        download java
-        :param javaVersion: java version
-        :param path: path
-        :return: done? bool
-        '''
+    async def downloadJava(self, javaVersion, path) -> bool:
+        """
+            Download Java and return the status.
+
+            Args: 
+                javaVersion(int):  Java version
+                path(str):  workspace path
+        
+            Returns: 
+                bool: True if the java is downloaded and extracted successfully, False otherwise.
+        """
         sources = self.source['java']['list']
         if self.config.use_mirror:
             sources = sources[::-1]
@@ -83,10 +103,14 @@ class Java(HSL):
         
     async def getJavaByGameVersion(self, mcVersion: str, path: str) -> str:
         """
-        get java path by game version
-        :param mcVersion: minecraft version
-        :param path: path
-        :return: java exec path
+            get java path by game version(if not exist, will call downloadJava)
+
+            Args: 
+                mcVersion(int):  mc version
+                path(str):  workspace path
+        
+            Returns: 
+                str: java executeable file path
         """
         javaVersion = await self.getJavaVersion(mcVersion)
         javaPath = os.path.join(path,'java',javaVersion)
@@ -97,10 +121,14 @@ class Java(HSL):
 
     async def getJavaByJavaVersion(self, javaVersion:str, path:str) -> str:
         """
-        get java path by java version
-        :param javaVersion: java version
-        :param path: path
-        :return: java exec path
+            get java path by java version(if not exist, will call downloadJava)
+
+            Args: 
+                javaVersion(int):  java version
+                path(str):  workspace path
+        
+            Returns: 
+                str: java executeable file path
         """
         javaPath = os.path.join(path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion, path):
