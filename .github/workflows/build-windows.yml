@@ -1,0 +1,39 @@
+name: HikariServerLauncher Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: 
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: PyInstaller Action
+        uses: Martin005/pyinstaller-action@v1.2.0
+        with:
+          spec: main.py
+          requirements: requirements.txt
+          options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}.exe
+          python_ver: 3.10.11
+          python_arch: x64
+          exe_path: ./dist
+          upload_exe_with_name: ./dist/HikariServerLauncher-${{ vars.VERSION }}.exe
+
+      - name: EXE Upload to website
+        if: success()
+        uses: wangyucode/sftp-upload-action@v2.0.2
+        with:
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: root
+          password: ${{ secrets.PASSWORD }}
+          localDir: ./dist/HikariServerLauncher-${{ vars.VERSION }}.exe
+          remoteDir: ${{ secrets.REMOTEPATH }}
