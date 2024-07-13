@@ -18,7 +18,7 @@ jobs:
           spec: main.py
           requirements: requirements.txt
           options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}.exe
-          python_ver: 3.10.10
+          python_ver: 3.10.11
           python_arch: x64
           exe_path: ./dist
           upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}.exe
