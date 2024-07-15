@@ -24,7 +24,6 @@ jobs:
           options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}-linux
           python_ver: 3.10.11
           python_arch: x64
-          exe_path: ./dist
           upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}-linux
 
       - name: EXE Upload to website
