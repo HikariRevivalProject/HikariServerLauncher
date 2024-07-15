@@ -21,7 +21,7 @@ jobs:
         with:
           spec: main.py
           requirements: requirements.txt
-          options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}-linux
+          options: -F -i HSL.ico
           python_ver: 3.10.11
           python_arch: x64
           upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}-linux
@@ -34,5 +34,5 @@ jobs:
           port: ${{ secrets.PORT }}
           username: root
           password: ${{ secrets.PASSWORD }}
-          localPath: ./dist/HikariServerLauncher-${{ vars.VERSION }}-linux
+          localPath: ./dist/main
           remotePath: ${{ secrets.REMOTEPATH_LINUX }}
