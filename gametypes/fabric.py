@@ -1,6 +1,8 @@
 import requests
+from rich.console import Console
+from utils.prompt import promptSelect
 from utils.download import downloadFile
-
+console = Console()
 async def getMcVersions(source: dict) -> list:
     sources = source["fabric"]['list']
     for source in sources:
@@ -39,3 +41,14 @@ async def downloadServer(
                 return True
                
     return False
+async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: str):
+    serverType = 'fabric'
+    fabVersion = await getMcVersions(self.source)
+    mcVersion = fabVersion[await promptSelect(fabVersion, '请选择 Fabric 服务器版本:')]
+    javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
+    loaderVersion = await getLoaderVersion(self.source)
+    if not await downloadServer(self.source, serverJarPath, mcVersion, loaderVersion):
+        print('Fabric 服务端下载失败。')
+        return False
+    console.print('Fabric 服务端下载完成。')
+    return serverName, serverType, serverPath, javaPath, data

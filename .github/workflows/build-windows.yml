@@ -21,19 +21,19 @@ jobs:
         with:
           spec: main.py
           requirements: requirements.txt
-          options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}.exe
+          options: -F -i HSL.ico --name=HikariServerLauncher-${{ vars.VERSION }}.exe main.py
           python_ver: 3.10.11
           python_arch: x64
           exe_path: .\dist
-          upload_exe_with_name: .\dist\HikariServerLauncher-${{ vars.VERSION }}.exe
+          upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}.exe
 
       - name: EXE Upload to website
         if: success()
-        uses: wangyucode/sftp-upload-action@v2.0.2
+        uses: wearesection/sftp-remote@1.0.1
         with:
           host: ${{ secrets.HOST }}
           port: ${{ secrets.PORT }}
           username: root
           password: ${{ secrets.PASSWORD }}
-          localDir: .\dist\HikariServerLauncher-${{ vars.VERSION }}.exe
-          remoteDir: ${{ secrets.REMOTEPATH }}
+          localPath: .\dist\HikariServerLauncher-${{ vars.VERSION }}.exe
+          remotePath: ${{ secrets.REMOTEPATH }}

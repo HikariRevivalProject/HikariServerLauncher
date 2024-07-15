@@ -1,9 +1,12 @@
 import requests
 import re
+import os
 import subprocess
 import psutil
 from rich.console import Console
+from gametypes import vanilla
 from utils.download import downloadFile
+from utils.prompt import promptSelect
 FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 console = Console()
 async def nameJoin(baseurl: str,mcVersion:str, forgeversion: str,category: str,format: str):
@@ -83,3 +86,34 @@ async def run_install(javaPath: str,path: str):
     while psutil.pid_exists(Process.pid):
         pass
     return True
+async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):
+        serverType = 'forge'
+        mcVersions = await vanilla.get_versions(self.source)
+        _mcVersions = await get_mcversions(self.source, self.config.use_mirror)
+        mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release' and x['id'] in _mcVersions]
+        index = await promptSelect(mcVersions, '请选择 Minecraft 版本:')
+        mcVersion = mcVersions[index]
+
+        javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
+        forgeVersions = await get_forgeversions(self.source, mcVersion, self.config.use_mirror)
+        index = await promptSelect(forgeVersions, '请选择 Forge 版本:')
+        forgeVersion = forgeVersions[index]
+        #1.21-51.0.21
+        if '-' in forgeVersion:
+            forgeVersion = forgeVersion.split('-')[1]
+            #51.0.21
+        data['mcVersion'] = mcVersion
+        data['forgeVersion'] = forgeVersion
+
+        installerPath = os.path.join(serverPath, 'forge-installer.jar')
+        if not await download_installer(self.source, mcVersion, forgeVersion, installerPath, self.config.use_mirror):
+            console.print('Forge 安装器下载失败。')
+            return False
+        console.print('Forge 安装器下载完成，尝试执行安装...')
+
+        if not await run_install(javaPath, serverPath):
+            console.print('Forge 安装失败。')
+            return False
+        console.print('Forge 安装完成。')
+
+        return serverName, serverType, serverPath, javaPath, data

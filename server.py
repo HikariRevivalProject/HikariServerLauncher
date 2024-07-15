@@ -1,16 +1,19 @@
 import os
 import psutil
-import subprocess
 import asyncio
-from aioconsole import ainput
-from threading import Thread
-from queue import Queue
+import subprocess
+
+from hsl import HSL
 from rich import box
-from rich.console import Console
+from queue import Queue
 from rich.live import Live
 from rich.table import Table
 from rich.panel import Panel
-from hsl import HSL
+from rich.layout import Layout
+from threading import Thread
+from aioconsole import ainput
+from rich.console import Console
+
 
 console = Console()
 
@@ -27,64 +30,67 @@ class Server(HSL):
         self.maxRam = maxRam
         self.data = data
     
-    # async def get_process_info(self, pid: int):
-    #     try:
-    #         p = psutil.Process(pid)
+    async def get_process_info(self, pid: int):
+        try:
+            p = psutil.Process(pid)
             
-    #         cpu_percent = p.cpu_percent(interval=1)
+            cpu_percent = p.cpu_percent()
             
-    #         mem_info = p.memory_info()
-    #         rss = mem_info.rss / (1024 * 1024)
-    #         vms = mem_info.vms / (1024 * 1024)
+            mem_info = p.memory_info()
+            rss = int(mem_info.rss / (1024 * 1024))
             
-    #         memory_percent = p.memory_percent()
+            memory_percent = int(p.memory_percent())
             
-    #         return {
-    #             'pid': pid,
-    #             'name': p.name(),
-    #             'cpu_percent': cpu_percent,
-    #             'memory_percent': memory_percent,
-    #             'rss': rss,
-    #             'vms': vms
-    #         }
-    #     except psutil.NoSuchProcess:
-    #         return None
-    # def create_panel(self, table, process_info):
-    #     if process_info:
-    #         table.add_row(
-    #             str(process_info['pid']),
-    #             f"{process_info['cpu_percent']}%",
-    #             f"{process_info['memory']} MB",
-    #             f"{process_info['memory_percent']}%",
-    #             f"{process_info['rss']} MB",
-    #             f"{process_info['vms']} MB"
-    #         )
-    #     return Panel(table, title=self.name, expand=True)
-
-    # def create_layout(self, table, process_info, output: str):
-    #     os_panel = self.create_panel(table, process_info)
-    #     layout = Panel.fit(f'[panel]\n{os_panel}\n[/]\n{output}', title=self.name)
-    #     return layout
-    def pathJoin(self, path: str) -> str:
+            return {
+                'pid': pid,
+                'cpu_percent': cpu_percent,
+                'memory_percent': memory_percent,
+                'memory': rss,
+            }
+        except psutil.NoSuchProcess:
+            return None
+    async def create_panel(self, table):
+        
+        return Panel(table, title=self.name, expand=True)
+    #async def monitor_process(self, process, output_queue: Queue):
+    async def pathJoin(self, path: str) -> str:
         return os.path.join(os.getcwd(), self.path, path)
 
-    async def Output(self, process, output_queue: Queue):
-        for line in iter(process.stdout.readline, b''):
-            try:
-                output_queue.put(line.decode('utf-8').strip())
-            except UnicodeDecodeError:
-                output_queue.put(line.decode('gbk').strip())
-            if process.poll() is not None:
-                output_queue.put(None)
-                break
-            if self.check_process(process):
-                line = output_queue.get()
-                console.log(line)
+    async def Output(self, process):
+        output_text = ''
+        
+        layout = Layout()
+        layout.split_column(Layout(name='monitor',ratio=3), Layout(name='output',ratio=6))
+        with Live(layout) as live:
+            for line in iter(process.stdout.readline, b''):
+                table = Table(
+                "PID", "CPU %", "Memory %", "Memory", show_header=True, show_edge=True, header_style="bold magenta"
+                )
+                try:
+                    output_text += line.decode('utf-8').strip() + '\n'
+                except UnicodeDecodeError:
+                    output_text += line.decode('gbk').strip() + '\n'                   
+                process_info = await self.get_process_info(process.pid)
+                if process_info:
+                    table.add_row(
+                        str(process_info['pid']),
+                        f"{process_info['cpu_percent']}%",
+                        f"{process_info['memory_percent']}%",
+                        f"{process_info['memory']} MB",
+                    )
+                text = '\n'.join(output_text.split('\n')[::-1])
+                layout['monitor'].update(Panel(table, title='System Info'))
+                layout['output'].update(Panel(text, title='Output'))
+                live.update(layout)
+                del table
+                
+                if process.poll() is not None:
+                    break
         return
-    def consoleOutput(self, process, output_queue: Queue):
+    def consoleOutput(self, process):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.Output(process, output_queue))
+        loop.run_until_complete(self.Output(process))
     async def get_input(self, process, input_queue: Queue):
         while True:
             try:
@@ -148,9 +154,7 @@ class Server(HSL):
 
         if self.config.debug:
             console.log(f'[Debug]: Run Command: {run_command}')
-        # table = Table(
-        #     "PID", "CPU %", "Memory", "Memory %", "RSS", "VMS", box=box.SIMPLE, title=self.name
-        # )
+        
         workdir = self.path if not self.config.direct_mode else None
 
         process = subprocess.Popen(
@@ -160,15 +164,16 @@ class Server(HSL):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
-
-        output_queue = Queue()
         input_queue = Queue()
         
         #t1 = Thread(target=self.consoleOutput, args=(table, process, output_queue))
-        t1 = Thread(target=self.consoleOutput, args=(process, output_queue))
+        t1 = Thread(target=self.consoleOutput, args=(process,))
         t2 = Thread(target=self.consoleInput, args=(process, input_queue))
 
         t1.start()
         t2.start()
 
         t1.join()
+        console.print('[bold green]请输入任意内容以退出控制台')
+        t2.join()
+        return
