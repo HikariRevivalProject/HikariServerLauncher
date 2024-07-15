@@ -35,5 +35,5 @@ jobs:
           port: ${{ secrets.PORT }}
           username: root
           password: ${{ secrets.PASSWORD }}
-          localPath: .\dist\HikariServerLauncher-${{ vars.VERSION }}.exe
+          localPath: .\.dist\HikariServerLauncher-${{ vars.VERSION }}.exe
           remotePath: ${{ secrets.REMOTEPATH }}
