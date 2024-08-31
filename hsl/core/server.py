@@ -3,7 +3,7 @@ import psutil
 import asyncio
 import subprocess
 
-from hsl import HSL
+from hsl.core.main import HSL
 from rich import box
 from queue import Queue
 from rich.live import Live
@@ -53,7 +53,7 @@ class Server(HSL):
         
         return Panel(table, title=self.name, expand=True)
     #async def monitor_process(self, process, output_queue: Queue):
-    async def pathJoin(self, path: str) -> str:
+    def pathJoin(self, path: str) -> str:
         return os.path.join(os.getcwd(), self.path, path)
 
     async def Output(self, process):

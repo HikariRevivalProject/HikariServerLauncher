@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hikari Server Launcher</title>
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+        <script>
+            var ws_status = new WebSocket("ws://" + location.host + "/ws/status");
+            ws_status.onopen = function() {
+                console.log("Connected to status websocket");
+            };
+            ws_status.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                console.log("Receaived status message: " + data);
+                if (data.init === 3) {
+                    new WebSocket("ws://" + location.host + "/ws/init");
+                } else if (data.init === 2) {
+                    document.getElementsByClassName("loading-text")[0].innerText = "正在加载下载源信息"
+                    document.getElementsByClassName("progress-bar")[0].style.width = "50%";
+                } else if (data.init === 1) {
+                    document.getElementsByClassName("loading-text")[0].innerText = "正在检查更新"
+                    document.getElementsByClassName("progress-bar")[0].style.width = "75%";
+                } else if (data.init === 0) {
+                    document.getElementsByClassName("loading-text")[0].innerText = "初始化成功"
+                    document.getElementsByClassName("progress-bar")[0].style.width = "100%";
+                    setTimeout(function() {
+                        window.location.href = "/home";
+                        ws_status.close();
+                    }, 2000);
+                }
+            };
+        </script>
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                font-family: Arial, sans-serif;
+                scroll-behavior: smooth;
+            }
+            section {
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            }
+            .container {
+                text-align: center;
+            }
+            h1 {
+                font-size: 3em;
+                margin-bottom: 20px;
+                background: black;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .loader {
+                border: 16px solid #f3f3f3; /* Light grey */
+                border-top: 16px solid #3498db; /* Blue */
+                border-radius: 50%;
+                width: 120px;
+                height: 120px;
+                animation: spin 1s linear infinite;
+                margin: 20px auto 0;
+                display: none;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .section1 {
+                background: linear-gradient(to right, #ffe4e1, #ffc1cc);
+            }
+            /* Add media queries for mobile devices */
+            @media (max-width: 768px) {
+                .card {
+                    width: calc(100% - 40px); /* Full width minus margins */
+                }
+            }
+            .progress-container {
+                width: 100%;
+                background-color: #ddd;
+                border-radius: 5px;
+            }
+            .progress-bar {
+                height: 30px;
+                background-color: #4CAF50;
+                border-radius: 5px;
+                text-align: center;
+                line-height: 30px;
+                color: white;
+                transition: all 700ms ease;
+            }
+            .loading-text {
+                font-size: 1.5em;
+                margin-top: 20px;
+                color: #6798db;
+            }
+            .title {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                text-align: center;
+            }
+            .version {
+                font-size: 1.5em;
+                margin-left: 5px;
+                margin-top: 70px;
+                color: black;
+            }
+        </style>
+    </head>
+    <body>
+        <section class="section1">
+            <div class="container">
+                <img src= "/favicon.ico" alt="HSL">
+                <div class="title">
+                    <h1>Hikari Server Launcher</h1>
+                    <h3 class="version">v1.5.0-webui-perview</h3>
+                </div>
+                <p class="loading-text">Loading...</p>
+                <div class="progress-container">
+                    <div class="progress-bar", style="width: 0%">Loading</div>
+                </div>
+                <h2>This is a development version of webui, it's not the final perfomace or stability.</h2>
+            </div>
+        </section>
+    </body>
+</html>

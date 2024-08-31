@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hikari Server Launcher - 主页</title>
+    <link rel="stylesheet" href="static/style.css">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧菜单栏 -->
+        <nav class="sidebar">
+            <ul>
+                <li class="active">
+                    <i class="icon-home"></i> <span>主页</span>
+                </li>
+                <li>
+                    <i class="icon-download"></i> <span>下载</span>
+                </li>
+                <li>
+                    <i class="icon-settings"></i> <span>设置</span>
+                </li>
+                <li>
+                    <i class="icon-info"></i> <span>关于</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 右侧内容区 -->
+        <div class="content">
+            <h1>This page is under construction.</h1>
+            
+        </div>
+    </div>
+
+    <script>
+        // 环形进度条逻辑
+        function createCircle(id, percent) {
+            const circle = document.getElementById(id);
+            let color;
+
+            // 设置不同占用百分比的颜色
+            if (percent > 80) {
+                color = '#ff4d4d'; // 红色
+            } else if (percent > 60) {
+                color = '#ffcc00'; // 黄色
+            } else {
+                color = '#4caf50'; // 绿色
+            }
+
+            // 应用渐变并留出中心空心
+            circle.style.background = `conic-gradient(${color} ${percent * 3.6}deg, #ccc ${percent * 3.6}deg)`;
+        }
+
+        createCircle('cpu-circle', 85); // CPU 85%占用，红色渐变
+        createCircle('memory-circle', 45); // 内存 45%占用，绿色渐变
+
+        // HighCharts 网络进出流量图
+        Highcharts.chart('network-traffic-chart', {
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: '网络进出流量'
+            },
+            xAxis: {
+                categories: ['10:00', '10:05', '10:10', '10:15', '10:20']
+            },
+            yAxis: {
+                title: {
+                    text: '流量 (MB/s)'
+                }
+            },
+            series: [{
+                name: '下载流量',
+                data: [120, 150, 100, 90, 130]
+            }, {
+                name: '上传流量',
+                data: [80, 90, 70, 50, 100]
+            }]
+        });
+    </script>
+</body>
+</html>

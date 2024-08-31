@@ -1,29 +1,22 @@
 import httpx
-import asyncio
+import logging
 
-from rich.console import Console
+from hsl.core.config import Config
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s][%(levelname)s] %(message)s')
+logger = logging.getLogger('hsl')
 
-from config import Config
-
-
-console = Console()
-
-HSL_VERSION = 14
 DOWNLOAD_SOURCE = r'https://hsl.hikari.bond/source.json'
 CONFIGS_SOURCE = r'https://hsl.hikari.bond/configs.json'
 VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 
-async def make_request(url: str, 
-                       error_message: 
-                       str, timeout: int = 3
-    ) -> dict:
+async def make_request(url: str, error_message: str, timeout: int = 3) -> dict:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url, timeout=timeout)
-            response.raise_for_status()  # Will raise an HTTPError for bad status codes
+            response.raise_for_status()
             return response.json()
-        except httpx.RequestError:
-            console.print(error_message)
+        except httpx.RequestError as e:
+            logger.error(error_message)
             return {}
 
 async def check_update(version: int) -> tuple[bool, int]:
@@ -32,8 +25,6 @@ async def check_update(version: int) -> tuple[bool, int]:
         latest: int = data['version']
         if version < latest:
             return True, latest
-        else:
-            return False, version
     return False, version
 
 async def get_source() -> dict:
@@ -47,22 +38,25 @@ async def get_configs() -> list:
     if data:
         return data
     return []
-async def init() -> tuple:
-    tasks = [
-        get_source(), 
-        check_update(HSL_VERSION)
-    ]
-    try:
-        SOURCE, NEWVERSION_INFO = await asyncio.gather(*tasks, return_exceptions=True)
-    except Exception as e:
-        console.print(e)
-        exit()
-    return SOURCE, NEWVERSION_INFO
-CONFIG = Config()
-SOURCE, NEWVERSION_INFO = asyncio.run(init())
+# async def init() -> tuple:
+#     tasks = [
+#         get_source(), 
+#         check_update(HSL_VERSION)
+#     ]
+#     try:
+#         SOURCE, NEWVERSION_INFO = await asyncio.gather(*tasks, return_exceptions=True)
+#     except Exception as e:
+#         logger.error(f'初始化失败：{e}')
+#         sys.exit(0)
+#     return SOURCE, NEWVERSION_INFO
 class HSL:
     def __init__(self):
-        self.source = SOURCE
-        self.version = HSL_VERSION
-        self.newVersionInfo = NEWVERSION_INFO
-        self.config = CONFIG
+        self.version: int = 14
+        self.config = Config
+        self.flag_init: int = 3
+    async def init(self):
+        self.flag_init = 2
+        self.source = await get_source()
+        self.flag_init = 1
+        self.newVersion = await check_update(self.version)
+        self.flag_init = 0

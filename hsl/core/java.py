@@ -1,7 +1,7 @@
 import os
 import zipfile
-from hsl import HSL
-from utils.download import downloadFile
+from hsl.core.main import HSL
+from hsl.utils.download import downloadFile
 
 
 if os.name == 'nt':
@@ -47,7 +47,7 @@ class Java(HSL):
         elif version == 7:
             return '8'
         elif 7 < version <= 16:
-            return '11'
+            return '8'
         elif 16 < version < 20:
             return '17'
         elif version >= 20:

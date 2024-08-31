@@ -4,8 +4,10 @@ httpx
 psutil
 pyyaml
 requests
+starlette
 noneprompt
 aioconsole
 pyinstaller
 javaproperties
+uvicorn[standard]
 tkintertools[suggest]==3.0.0b3

@@ -1,17 +1,17 @@
-from ast import Tuple
 import os
 import re
+import sys
 import yaml
 import asyncio
 import noneprompt
 import javaproperties
-from java import Java
+from hsl.core.java import Java
 import utils.gui as gui
 from utils import osfunc
-from server import Server
+from hsl.core.server import Server
 from typing import Callable
-from workspace import Workspace
-from hsl import HSL, get_configs
+from hsl.core.workspace import Workspace
+from hsl.core.main import HSL
 from rich.console import Console
 from gametypes import fabric, forge, paper, vanilla
 from utils.prompt import promptSelect, promptInput, promptConfirm
@@ -23,9 +23,9 @@ OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '高级选项', '退出']
 OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本' ,'取消']
 
-OS_MAXRAM = osfunc.getOSMaxRam()
+OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
-MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$')
+MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
 
 console = Console()
 
@@ -45,13 +45,13 @@ class Main(HSL):
         console.print('设置已应用。')
         console.rule('配置完成')
         self.config.first_run = False
-        self.config.save_config()
+        self.config.save()
         console.rule('服务器创建')
         await self.create()
     
     async def exit(self) -> None:
         #exit the program
-        os._exit(0)
+        sys.exit(0)
 
     async def create(self) -> None:
         """
@@ -100,7 +100,7 @@ class Main(HSL):
             maxRam = await promptInput('输入错误，请重新输入:')
         return maxRam
 
-    async def install(self, *, serverName: str, serverPath: str) -> Tuple | bool:
+    async def install(self, *, serverName: str, serverPath: str) -> tuple | bool:
         """
             Install the server
             Args: 
@@ -174,7 +174,7 @@ class Main(HSL):
     async def set_autorun(self, server: Server) -> None:
         if not await promptConfirm(f'!!! 确定要将 {server.name} 设为自动启动吗？'): return
         self.config.autorun = server.name
-        self.config.save_config()
+        self.config.save()
         console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
 
     async def export_start_script(self, server: Server) -> None:
@@ -320,7 +320,7 @@ class Main(HSL):
             len(OPTIONS_SETTINGS) - 1: lambda: None
         }
         await settings_methods.get(index, lambda: None)()
-        self.config.save_config()
+        self.config.save()
 
     async def set_debug_mode(self):
         self.config.debug = await promptConfirm('开启调试模式？')
@@ -377,7 +377,7 @@ async def main():
                 await asyncio.wait_for(task, None)
             except (KeyboardInterrupt, asyncio.CancelledError):
                 mainProgram.config.autorun = ''
-                mainProgram.config.save_config()
+                mainProgram.config.save()
                 console.print('自动启动已取消并重置，如需再次启用请重新设置。')
                 await asyncio.sleep(1)
         await mainProgram.mainMenu()
