@@ -1,7 +1,7 @@
 import requests
 from rich.console import Console
-from utils.prompt import promptSelect
-from utils.download import downloadFile
+from hsl.utils.prompt import promptSelect
+from hsl.utils.download import downloadFile
 console = Console()
 async def getMcVersions(source: dict) -> list:
     sources = source["fabric"]['list']

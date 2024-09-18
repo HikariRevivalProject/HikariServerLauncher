@@ -4,9 +4,9 @@ import os
 import subprocess
 import psutil
 from rich.console import Console
-from gametypes import vanilla
-from utils.download import downloadFile
-from utils.prompt import promptSelect
+from hsl.gametypes import vanilla
+from hsl.utils.download import downloadFile
+from hsl.utils.prompt import promptSelect
 FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 console = Console()
 async def nameJoin(baseurl: str,mcVersion:str, forgeversion: str,category: str,format: str):

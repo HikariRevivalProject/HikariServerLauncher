@@ -11,8 +11,8 @@ class Workspace(HSL):
         self.file = self.config.workspace_file
         self.path = os.path.join(self.dir, self.file)
 
-        self.initialize()
-    def initialize(self):
+        self.workspace_init()
+    def workspace_init(self):
         try:
             self.load()
         except FileNotFoundError:

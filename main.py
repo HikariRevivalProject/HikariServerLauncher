@@ -6,15 +6,15 @@ import asyncio
 import noneprompt
 import javaproperties
 from hsl.core.java import Java
-import utils.gui as gui
-from utils import osfunc
+import hsl.utils.gui as gui
+from hsl.utils import osfunc
 from hsl.core.server import Server
 from typing import Callable
 from hsl.core.workspace import Workspace
-from hsl.core.main import HSL
+from hsl.core.main import HSL, get_configs
 from rich.console import Console
-from gametypes import fabric, forge, paper, vanilla
-from utils.prompt import promptSelect, promptInput, promptConfirm
+from hsl.gametypes import fabric, forge, paper, vanilla
+from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
 
 OPTIONS_YN = ['是', '否']
 OPTIONS_ADVANCED = ['GUI测试', '取消']
@@ -363,7 +363,7 @@ class Main(HSL):
 
 mainProgram = Main()
 async def main():
-    isOutdated, new = mainProgram.newVersionInfo
+    isOutdated, new = mainProgram.newVersion
     if isOutdated:
         console.print(f'[bold magenta]发现新版本，版本号：[u]{new/10}[/u]，建议及时更新')
         await asyncio.sleep(3)

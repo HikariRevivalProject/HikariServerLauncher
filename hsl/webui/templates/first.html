@@ -6,15 +6,29 @@
         <title>Hikari Server Launcher</title>
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
         <script>
+            function show_error() {
+                document.getElementsByClassName("loading-text")[0].innerText = "初始化失败"
+                document.getElementsByClassName("progress-bar")[0].style.width = "100%";
+                document.getElementsByClassName("progress-bar")[0].style.backgroundColor = "red";
+            }
             var ws_status = new WebSocket("ws://" + location.host + "/ws/status");
             ws_status.onopen = function() {
                 console.log("Connected to status websocket");
+            };
+            ws_status.onerror = function(error) {
+                console.log("Error connecting to status websocket: " + error);
+                ws_status.close();
+                document.getElementsByClassName("loading-text")[0].innerText = "无法连接到Websocket，请检查程序是否正常运行"
+                document.getElementsByClassName("progress-bar")[0].style.width = "100%";
+                document.getElementsByClassName("progress-bar")[0].style.backgroundColor = "red";
             };
             ws_status.onmessage = function(event) {
                 var data = JSON.parse(event.data);
                 console.log("Receaived status message: " + data);
                 if (data.init === 3) {
-                    new WebSocket("ws://" + location.host + "/ws/init");
+                    document.getElementsByClassName("loading-text")[0].innerText = "启动初始化"
+                    document.getElementsByClassName("progress-bar")[0].style.width = "25%";
+                    var init_ws = new WebSocket("ws://" + location.host + "/ws/init");
                 } else if (data.init === 2) {
                     document.getElementsByClassName("loading-text")[0].innerText = "正在加载下载源信息"
                     document.getElementsByClassName("progress-bar")[0].style.width = "50%";
@@ -28,6 +42,8 @@
                         window.location.href = "/home";
                         ws_status.close();
                     }, 2000);
+                } else if (data.init === 10) {
+                    show_error();
                 }
             };
         </script>
@@ -53,12 +69,13 @@
                 font-size: 3em;
                 margin-bottom: 20px;
                 background: black;
+                background-clip: unset;
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
             }
             .loader {
-                border: 16px solid #f3f3f3; /* Light grey */
-                border-top: 16px solid #3498db; /* Blue */
+                border: 16px solid #f3f3f3;
+                border-top: 16px solid #3498db;
                 border-radius: 50%;
                 width: 120px;
                 height: 120px;
@@ -73,10 +90,9 @@
             .section1 {
                 background: linear-gradient(to right, #ffe4e1, #ffc1cc);
             }
-            /* Add media queries for mobile devices */
             @media (max-width: 768px) {
                 .card {
-                    width: calc(100% - 40px); /* Full width minus margins */
+                    width: calc(100% - 40px);
                 }
             }
             .progress-container {
@@ -96,7 +112,7 @@
             .loading-text {
                 font-size: 1.5em;
                 margin-top: 20px;
-                color: #6798db;
+                color: #14389a;
             }
             .title {
                 display: flex;

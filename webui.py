@@ -1,6 +1,9 @@
+from hsl.api import HSL_API
+from hsl.core.main import HSL
 from hsl.webui import HSL_WEBUI
-import webbrowser
+import threading
 if __name__ == '__main__':
-    webbrowser.open("http://localhost:15432/")
-    HSL_WEBUI('0.0.0.0', 15432)
-    
+    thread1 = threading.Thread(target=HSL_API().run)
+    thread2 = threading.Thread(target=HSL_WEBUI().run)
+    thread1.start()
+    thread2.start()

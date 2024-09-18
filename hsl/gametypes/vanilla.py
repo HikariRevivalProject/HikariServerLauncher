@@ -1,7 +1,7 @@
 import requests
 from rich.console import Console
-from utils.download import downloadFile
-from utils.prompt import promptSelect
+from hsl.utils.download import downloadFile
+from hsl.utils.prompt import promptSelect
 console = Console()
 async def get_versions(source,use_bmclapi=False) -> list:
     sources = source["mc"]["vanilla"]['list']

@@ -1,16 +1,18 @@
 import asyncio
+import webbrowser
 from starlette.requests import Request
 from starlette.applications import Starlette
 from starlette.responses import HTMLResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
+
 import uvicorn
 import os
 import logging
 import sys
+import psutil
 import time
-
 from hsl.core.main import HSL
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger('hsl')
@@ -40,8 +42,16 @@ class HSL_WEBUI(HSL):
         try:
             try:
                 while True:
-                    await asyncio.sleep(0.5)
-                    await websocket.send_json({"init": self.flag_init, "timestamp": time.time()})
+                    await asyncio.sleep(1)
+                    #get cpu percent
+                    cpu_percent = int(psutil.cpu_percent(None))
+                    #get memory percent
+                    memory = int(psutil.virtual_memory().total / (1024.0 ** 2))
+                    memory_used = int(psutil.virtual_memory().used / (1024.0 ** 2))
+                    #get disk percent
+                    disk = int(psutil.disk_usage('/').total / (1024.0 ** 3))
+                    disk_used = int(psutil.disk_usage('/').used / (1024.0 ** 3))
+                    await websocket.send_json({"init": self.flag_init, "timestamp": int(time.time()), "cpu_percent": cpu_percent, "memory": memory, "memory_used": memory_used, "disk": disk, "disk_used": disk_used, "outdated": self.flag_outdated})
             except WebSocketDisconnect:
                 logger.info(f"WebSocket Disconnected")
             finally:
@@ -49,18 +59,20 @@ class HSL_WEBUI(HSL):
         except RuntimeError:
             pass
 
-    def __init__(self, host, port):
+    def __init__(self):
         super().__init__()
+
+    def run(self):
+        host = self.config.host
+        port = self.config.port
         routes = [
             Route("/", endpoint=self.firstpage),
             Route("/home", endpoint=self.homepage),
-            WebSocketRoute("/ws/init", endpoint=self.websocket_init),
             WebSocketRoute("/ws/status", endpoint=self.websocket_status),
+            WebSocketRoute("/ws/init", endpoint=self.websocket_init),
         ]
         self.app = Starlette(debug=True, routes=routes)
         self.app.mount("/static", StaticFiles(directory="hsl/webui/templates/static"), name="static")
         self.app.mount("/", StaticFiles(directory="hsl/webui/templates/"), name="templates")
+        webbrowser.open(f"http://localhost:{port}/", autoraise=True)
         uvicorn.run(self.app, host=host, port=port, log_level="info")
-        
-if __name__ == "__main__":
-    HSL_WEBUI('0.0.0.0', 15432)

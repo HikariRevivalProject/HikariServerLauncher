@@ -1,4 +1,4 @@
-from utils.download import downloadFile
+from hsl.utils.download import downloadFile
 from rich.console import Console
 console = Console()
 async def downloadLatest(source,path) -> bool:

@@ -1,7 +1,8 @@
 #config
 import os
 import json
-
+import logging
+logger = logging.getLogger('hsl')
 CONFIG_FILE = 'hsl-config.json'
 class Config:
     first_run: bool = True
@@ -11,6 +12,8 @@ class Config:
     autorun: str = ''
     debug: bool = False
     direct_mode: bool = False
+    host: str = '0.0.0.0'
+    port: int = 15432
     
     @classmethod
     def load(cls):
@@ -24,18 +27,26 @@ class Config:
                 cls.autorun = config['autorun']
                 cls.debug = config['debug']
                 cls.direct_mode = config['direct_mode']
+                cls.host = config['host']
+                cls.port = config['port']
         except (FileNotFoundError, KeyError):
             cls.save()
+        logger.info(f'Config loaded: {cls.__dict__}')
     @classmethod
     def save(cls):
         with open(CONFIG_FILE, 'w') as f:
             json.dump({
                 'first_run': cls.first_run,
                 'use_mirror': cls.use_mirror,
+                'workspace_dir': cls.workspace_dir,
+                'workspace_file': cls.workspace_file,
                 'autorun': cls.autorun,
                 'debug': cls.debug,
-                'direct_mode': cls.direct_mode
+                'direct_mode': cls.direct_mode,
+                'host': cls.host,
+                'port': cls.port
             }, f)
+        logger.info(f'Config saved: {cls.__dict__}')
 # class Config:
 #     def __init__(self):
 #         self.first_run: bool = True
