@@ -1,4 +1,10 @@
-![HikariServerLauncher](https://socialify.git.ci/Hikari16665/HikariServerLauncher/image?description=1&descriptionEditable=Lightweight%20Minecraft%20server%20launcher/installer%20in%20Python&font=Jost&forks=1&issues=1&name=1&pattern=Diagonal%20Stripes&pulls=1&stargazers=1&theme=Auto)
+![HikariServerLauncher](https://socialify.git.ci/Hikari16665/HikariServerLauncher/image?description=1&font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fgithub.com%2FHikari16665%2FHikariServerLauncher%2Fblob%2Fmain%2FHSL.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Auto)
+![Python](https://img.shields.io/badge/Language-%20Python-blue)
+![GitHub License](https://img.shields.io/github/license/Hikari16665/HikariServerLauncher)
+![GitHub Downloads](https://img.shields.io/github/downloads/Hikari16665/HikariServerLauncher/total)
+![GitHub last commit](https://img.shields.io/github/last-commit/Hikari16665/HikariServerLauncher)
+[![Telegram](https://img.shields.io/badge/Chat-Telegram-27A7E7)](https://t.me/hikariserverlauncher)
+[![QQ](https://img.shields.io/badge/Chat-QQ-27A7E7)](https://qm.qq.com/q/bUTqWXnwje)
 # Hikari Server Launcher
 Hikari Server Launcher 是一个简单、轻量级的，易用的Minecraft服务器安装工具。
 Hikari Server Launcher is a simple, lightweight, and easy-to-use launcher/installer for Minecraft Server.
@@ -36,7 +42,7 @@ Hikari Server Launcher is a simple, lightweight, and easy-to-use launcher/instal
 ## Contributing 贡献
 - 你可以从两方面对此项目贡献：
 - 提交 issue, pull request 来完善这个项目。
-- 编辑configs.json，这是特定配置的索引文件，个人时间有限无法全部适配，configs.json的格式可以参考 [config.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/configs.json)。
+- 编辑configs.json，这是特定配置的索引文件，个人时间有限无法全部适配，configs.json的格式可以参考 [config.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/spconfigs.json)，里面有详细的注释。
 
 
 ## 致谢 Thanks
