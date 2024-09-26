@@ -22,7 +22,7 @@ jobs:
           spec: main.py
           requirements: requirements.txt
           options: -F -i HSL.ico
-          python_ver: 3.10.11
+          python_ver: 3.12.4
           python_arch: x64
           upload_exe_with_name: HikariServerLauncher-${{ vars.VERSION }}.exe
 
