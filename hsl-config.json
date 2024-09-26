@@ -1,1 +1,8 @@
-{"first_run": true, "use_mirror": false, "workspace_dir": "workspace", "workspace_file": "workspace.json", "autorun": "", "debug": false, "direct_mode": false, "host": "0.0.0.0", "port": 15432}
+{
+    "first_run": false,
+    "use_mirror": true,
+    "workspace_dir": "workspace",
+    "workspace_file": "workspace.json",
+    "autorun": "1",
+    "debug": false
+}

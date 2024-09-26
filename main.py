@@ -2,23 +2,23 @@ import os
 import re
 import sys
 import yaml
+import json
 import asyncio
 import noneprompt
 import javaproperties
 from hsl.core.java import Java
-import hsl.utils.gui as gui
 from hsl.utils import osfunc
 from hsl.core.server import Server
 from typing import Callable
 from hsl.core.workspace import Workspace
-from hsl.core.main import HSL, get_configs
+from hsl.core.main import HSL
 from rich.console import Console
 from hsl.gametypes import fabric, forge, paper, vanilla
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
 
 OPTIONS_YN = ['是', '否']
 OPTIONS_ADVANCED = ['GUI测试', '取消']
-OPTIONS_SETTINGS = ['调试模式','根目录模式','取消']
+OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '取消']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '高级选项', '退出']
 OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本' ,'取消']
@@ -42,12 +42,11 @@ class Main(HSL):
         console.rule('配置设置')
         console.print('如果你的服务器环境在国内, 推荐使用镜像源源以获得更好的速度。\n是否使用镜像源优先? (默认: 否)\n')
         self.config.use_mirror = await promptConfirm('是否使用镜像源优先?')
-        console.print('设置已应用。')
-        console.rule('配置完成')
         self.config.first_run = False
         self.config.save()
-        console.rule('服务器创建')
-        await self.create()
+        console.print('设置已应用。')
+        console.rule('配置完成')
+        return
     
     async def exit(self) -> None:
         #exit the program
@@ -114,8 +113,6 @@ class Main(HSL):
                 data
         """
 
-        if self.config.direct_mode:
-            serverPath = ''
         serverJarPath = os.path.join(serverPath, 'server.jar')
         
         gameType = await promptSelect(OPTIONS_GAMETYPE, '请选择服务器类型:')
@@ -186,7 +183,7 @@ class Main(HSL):
 
     async def editConfig(self, server: Server) -> None:
         console.print('[blue bold]读取特定配置索引:')
-        configs = await get_configs()
+        configs = self.spconfigs
         if not configs:
             console.print('[bold magenta]特定配置索引读取失败，请检查网络连接。')
             return
@@ -198,7 +195,7 @@ class Main(HSL):
         
         await self.edit_selected_configs(editableConfigs, server)
         return
-    async def get_editable_configs(self, configs: list, server: Server) -> list:
+    async def get_editable_configs(self, configs, server: Server) -> list:
         editableConfigs = []
         for config_info in configs:
             console.print(f'[bold green]尝试读取配置文件：{config_info["name"]}')
@@ -223,8 +220,6 @@ class Main(HSL):
         return {}
 
     def get_nested_value(self, config: dict, keys: list) -> dict | None:
-        #console.print(keys)
-        #console.print(config)
         for key in keys:
             config = config.get(key, None)
             if config is None:
@@ -260,9 +255,9 @@ class Main(HSL):
                 break
             
             key, _ = editableKeys[editKeyIndex]
-            key_info = editConfig['keys'][editKeyIndex]
+            key_info: dict  = editConfig['keys'][editKeyIndex]
             console.print(f'[bold white]Tips: {key_info["tips"]}')
-            if key_info['danger']:
+            if key_info.get('danger', False):
                 console.print(f'[bold red]这是一个危险配置！修改前请三思！')
             editValue = await self.input_new_value(editConfig, key_info)
             self.set_nested_value(config, key.split('.'), editValue)
@@ -316,7 +311,7 @@ class Main(HSL):
         
         settings_methods = {
             0: lambda: self.set_debug_mode(),
-            1: lambda: self.set_direct_mode(),
+            1: lambda: self.set_mirror_priority(),
             len(OPTIONS_SETTINGS) - 1: lambda: None
         }
         await settings_methods.get(index, lambda: None)()
@@ -324,15 +319,13 @@ class Main(HSL):
 
     async def set_debug_mode(self):
         self.config.debug = await promptConfirm('开启调试模式？')
-
-    async def set_direct_mode(self):
-        self.config.direct_mode = await promptConfirm('开启根目录模式？安装服务器将直接安装在当前目录下。')
-
+    async def set_mirror_priority(self):
+        self.config.use_mirror = await promptConfirm('是否使用镜像源优先？')
     async def advanced_options(self):
         index = await promptSelect(OPTIONS_ADVANCED, '高级选项：')
         
         advanced_methods = {
-            0: lambda: gui.init(),
+            0: lambda: (),
             1: lambda: self.exit()
         }
         await advanced_methods[index]()
@@ -340,6 +333,8 @@ class Main(HSL):
     async def mainMenu(self):
         console.clear()
         console.rule(f'{HSL_NAME} v{str(self.version/10)}')
+        console.set_window_title(f'{HSL_NAME} v{str(self.version/10)}')
+        console.print(f'[bold blue]信息：当前工作目录：[u]{self.Workspace.path}[/u], 最大内存：[u]{OS_MAXRAM}[/u]MB, 调试模式：[u]{self.config.debug}[/u], 镜像源优先：[u]{self.config.use_mirror}[/u], 自动启动：[u]{self.config.autorun}[/u]')
         while True:
             console.print(f'[bold gold]欢迎使用 {HSL_NAME}.')
             index = await promptSelect(OPTIONS_MENU, '菜单：')
@@ -363,12 +358,13 @@ class Main(HSL):
 
 mainProgram = Main()
 async def main():
-    isOutdated, new = mainProgram.newVersion
+    isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
     if isOutdated:
         console.print(f'[bold magenta]发现新版本，版本号：[u]{new/10}[/u]，建议及时更新')
         await asyncio.sleep(3)
     if mainProgram.config.first_run:
         await mainProgram.welcome()
+        await mainProgram.mainMenu()
     else:
         if mainProgram.config.autorun:
             try:
@@ -394,3 +390,4 @@ if __name__ == '__main__':
             console.print_exception()
         else:
             console.print(f'[bold red]发生未知错误: {e}')
+            console.print_exception()

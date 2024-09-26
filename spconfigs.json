@@ -8,15 +8,15 @@
         "description": "Minecraft服务器基本配置文件 包含端口，人数，正版等",
         "?description": "! 关于配置文件的介绍",
         "type": "properties",
-        "?type": "! 配置文件类型，目前只支持properties，对应.properties文件",
+        "?type": "! 配置文件类型，目前支持properties和yml两种",
         "keys": [
             {
                 "name": "服务器端口",
                 "key": "server-port",
-                "?key": "配置键的名称，如果有嵌套用单个点号(.)分割",
+                "?key": "！配置键的名称，如果有嵌套用单个点号(.)分割",
                 "description": "服务器将监听的端口（默认：25565）",
                 "tips": "只有你确定才要更改...",
-                "?tips": "提示，若设置将会在用户编辑时显示",
+                "?tips": "！提示，若设置将会在用户编辑时显示",
                 "type": "int",
                 "?type": "! 可以为int str bool",
                 "danger": false,
@@ -82,7 +82,7 @@
                 "name": "极限模式",
                 "key": "hardcore",
                 "description": "启用后服务器将进入极限模式，若死亡将被服务器封禁",
-                "tips": "你很勇啊",
+                "tips": "你很勇啊？",
                 "type": "bool",
                 "danger": true
             },
@@ -129,6 +129,7 @@
             {
                 "name": "允许末地",
                 "key": "settings.allow-end",
+                "?key": "！配置键的名称，如果有嵌套用单个点号(.)分割",
                 "description": "服务器是否允许进入末地？（默认：是）",
                 "tips": "没有末地需求的小游戏服可以关闭此项",
                 "type": "bool",
@@ -155,6 +156,7 @@
     {
         "name": "Paper 世界设置",
         "path": "config/paper-world-defaults.yml",
+        "?path":"! 配置文件的路径，子路径使用单个左斜线(/)分割",
         "description": "Paper世界设置",
         "type": "yml",
         "keys": [
@@ -194,7 +196,7 @@
                 "name": "区块系统IO线程数",
                 "key": "chunk-system.io-threads",
                 "description": "区块系统IO线程数（-1自动）",
-                "tips": "取决于核心数，建议设为自动分配",
+                "tips": "取决于核心数",
                 "type": "int",
                 "danger": true
             },
@@ -202,7 +204,7 @@
                 "name": "区块系统工作线程数",
                 "key": "chunk-system.worker-threads",
                 "description": "区块系统工作线程数（-1自动）",
-                "tips": "取决于核心数，建议设为自动分配",
+                "tips": "取决于核心数",
                 "type": "int",
                 "danger": true
             }

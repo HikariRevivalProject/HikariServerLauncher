@@ -1,11 +1,11 @@
-from hsl.utils.download import downloadFile
+from hsl.utils.download import downloadfile
 from rich.console import Console
 console = Console()
 async def downloadLatest(source,path) -> bool:
     sources = source["mc"]["paper"]['list']
     for source in sources:
-        if source['type'] == "official":
-            if downloadFile(source['latest'],path):
+        if source['type'] == "stable":
+            if await downloadfile(source['latest'],path):
                 return True
     return False
 async def getLatestVersionName(source) -> str:

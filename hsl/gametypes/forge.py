@@ -5,7 +5,7 @@ import subprocess
 import psutil
 from rich.console import Console
 from hsl.gametypes import vanilla
-from hsl.utils.download import downloadFile
+from hsl.utils.download import downloadfile
 from hsl.utils.prompt import promptSelect
 FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 console = Console()
@@ -72,11 +72,11 @@ async def download_installer(source: dict,mcVersion: str,version: str,path: str,
                 'category': 'installer',
                 'format': 'jar'
             }
-            status = downloadFile(source['download'],path,params=params)
+            status = await downloadfile(source['download'],path,params=params)
             return status
         if source['type'] == 'official':
             url = await nameJoin(source['download'],mcVersion,version,'installer','jar')
-            status = downloadFile(url, path)
+            status = await downloadfile(url, path)
             return status
     return False
 async def run_install(javaPath: str,path: str):

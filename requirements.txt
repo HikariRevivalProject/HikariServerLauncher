@@ -4,10 +4,10 @@ httpx
 psutil
 pyyaml
 requests
+pydantic==1.10.18
 starlette
 noneprompt
 aioconsole
 pyinstaller
 javaproperties
 uvicorn[standard]
-tkintertools[suggest]==3.0.0b3

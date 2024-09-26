@@ -1,11 +1,11 @@
 import requests
 from rich.console import Console
-from hsl.utils.download import downloadFile
+from hsl.utils.download import downloadfile
 from hsl.utils.prompt import promptSelect
 console = Console()
-async def get_versions(source,use_bmclapi=False) -> list:
+async def get_versions(source,mirror_first=False) -> list:
     sources = source["mc"]["vanilla"]['list']
-    if use_bmclapi:
+    if mirror_first:
         sources = sources[::-1]
     for source in sources:
         if source['type'] == 'bmclapi':
@@ -17,13 +17,13 @@ async def get_versions(source,use_bmclapi=False) -> list:
             except:
                 pass
     return []
-async def downloadServer(source,gameVersion,path,use_bmclapi=False) -> bool:
+async def downloadServer(source,gameVersion,path,mirror_first=False) -> bool:
     sources = source["mc"]["vanilla"]['list']
-    if use_bmclapi:
+    if mirror_first:
         sources = sources[::-1]
     for source in sources:
         if source['type'] == 'bmclapi':
-            if downloadFile(source['server'].replace('{version}',gameVersion),path):
+            if await downloadfile(source['server'].replace('{version}',gameVersion),path):
                 return True
     return False
 async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):

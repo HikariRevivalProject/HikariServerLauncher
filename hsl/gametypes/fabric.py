@@ -1,7 +1,7 @@
 import requests
 from rich.console import Console
 from hsl.utils.prompt import promptSelect
-from hsl.utils.download import downloadFile
+from hsl.utils.download import downloadfile
 console = Console()
 async def getMcVersions(source: dict) -> list:
     sources = source["fabric"]['list']
@@ -37,7 +37,7 @@ async def downloadServer(
     for source in sources:
         if source['type'] == "official":
             url = source['installer'].replace(r'{version}',mcVersion).replace(r'{loader}',loaderVersion)
-            if downloadFile(url,path):
+            if await downloadfile(url,path):
                 return True
                
     return False

@@ -27,14 +27,10 @@ class Workspace(HSL):
             self.workspaces = json.load(f)
     async def create(self, *, server_name: str):
         serverPath = os.path.join(self.dir,server_name)
-        if self.config.direct_mode:
-            with open('eula.txt', 'w') as f:
-                f.write("eula=true")
-        else:
-            if not os.path.exists(serverPath):
-                os.makedirs(serverPath)
-            with open(os.path.join(serverPath,'eula.txt'), 'w') as f:
-                f.write('eula=true')
+        if not os.path.exists(serverPath):
+            os.makedirs(serverPath)
+        with open(os.path.join(serverPath,'eula.txt'), 'w') as f:
+            f.write('eula=true')
         return serverPath
     async def add(self, Server: Server):
         self.workspaces.append({

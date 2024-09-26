@@ -1,9 +1,10 @@
 import os
 import zipfile
+from rich.console import Console
 from hsl.core.main import HSL
-from hsl.utils.download import downloadFile
+from hsl.utils.download import downloadfile
 
-
+console = Console()
 if os.name == 'nt':
     JAVA_EXEC = 'java.exe'
     # Windows
@@ -13,7 +14,6 @@ elif os.name == 'posix':
 async def recursive_chmod(directory, mode):
     """
         Recursively change the permissions of a directory and its contents.
-        for Linux.
         Args: 
             directory(str):  directory path
             mode(int):  permission mode
@@ -65,7 +65,7 @@ class Java(HSL):
                 bool: True if the java exists, False otherwise.
         """
 
-        if not os.path.exists(os.path.join(path,'java',javaVersion,'bin')):
+        if not os.path.exists(os.path.join(path, 'java', javaVersion, 'bin', JAVA_EXEC)):
             return False
         return True
     async def downloadJava(self, javaVersion, path) -> bool:
@@ -93,10 +93,11 @@ class Java(HSL):
                 url = i['windows'][javaVersion]
             if os.name == 'posix':
                 url = i['linux'][javaVersion]
-            if downloadFile(url,filename):
+            if await downloadfile(url,filename):
                 with zipfile.ZipFile(filename,'r') as file:
                     file.extractall(path)
-                await recursive_chmod(path,0o755)
+                #change permission for linux
+                await recursive_chmod(path, 0o755)
                 os.remove(filename)
                 return True
         return False
@@ -115,7 +116,7 @@ class Java(HSL):
         javaVersion = await self.getJavaVersion(mcVersion)
         javaPath = os.path.join(path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion, path):
-            print(f'Java版本 {javaVersion} 不存在。正在下载Java...')
+            console.print(f'[red] Java版本 {javaVersion} 不存在。正在下载Java...')
             await self.downloadJava(javaVersion, path)
         return os.path.join(javaPath, 'bin', JAVA_EXEC)
 
@@ -132,6 +133,6 @@ class Java(HSL):
         """
         javaPath = os.path.join(path,'java',javaVersion)
         if not await self.checkJavaExist(javaVersion, path):
-            print(f'Java版本 {javaVersion} 不存在。正在下载Java...')
+            console.print(f'[red] Java版本 {javaVersion} 不存在。正在下载Java...')
             await self.downloadJava(javaVersion, path)
         return os.path.join(javaPath,'bin',JAVA_EXEC)
