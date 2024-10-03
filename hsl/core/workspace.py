@@ -1,3 +1,4 @@
+from hsl.core.exceptions import NoSuchServerException
 from hsl.core.main import HSL
 import json
 import os
@@ -24,7 +25,7 @@ class Workspace(HSL):
             json.dump(self.workspaces, f)
     def load(self):
         with open(self.path, 'r') as f:
-            self.workspaces = json.load(f)
+            self.workspaces: list[dict] = json.load(f)
     async def create(self, *, server_name: str):
         serverPath = os.path.join(self.dir,server_name)
         if not os.path.exists(serverPath):
@@ -37,7 +38,7 @@ class Workspace(HSL):
             "name": Server.name,
             "type": Server.type,
             "path": Server.path,
-            "javaPath": Server.javaPath,
+            "javaversion": Server.javaversion,
             "maxRam": Server.maxRam,
             "data": Server.data
         })
@@ -45,12 +46,12 @@ class Workspace(HSL):
     async def get(self, index: int) -> Server:
         server = self.workspaces[index]
         return Server(
-            name = server["name"],
-            type = server["type"],
-            path = server["path"],
-            javaPath = server["javaPath"],
-            maxRam = server["maxRam"],
-            data = server["data"]
+            name = server.get("name",''),
+            type = server.get("type",''),
+            path = server.get("path",''),
+            javaversion = server.get("javaversion",''),
+            maxRam = server.get("maxRam",''),
+            data = server.get("data",{})
         )
     async def getFromName(self, name: str) -> Server:
         for server in self.workspaces:
@@ -59,15 +60,15 @@ class Workspace(HSL):
                     name = server["name"],
                     type = server["type"],
                     path = server["path"],
-                    javaPath = server["javaPath"],
+                    javaversion = server["javaversion"],
                     maxRam = server["maxRam"],
                     data = server["data"]
                 )
-        raise Exception("Server not found")
+        raise NoSuchServerException("Server not found")
     async def delete(self, index: int):
         try:
             shutil.rmtree(self.workspaces[index]["path"])
-        except:
+        except Exception:
             pass
         del self.workspaces[index]
         self.save()

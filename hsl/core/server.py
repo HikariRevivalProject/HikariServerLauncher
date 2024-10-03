@@ -2,7 +2,7 @@ import os
 import psutil
 import asyncio
 import subprocess
-
+from hsl.core.java import Java
 from hsl.core.main import HSL
 from queue import Queue
 from rich.live import Live
@@ -20,12 +20,14 @@ class Server(HSL):
     """
     Server Class
     """
-    def __init__(self, *, name: str, type: str, path: str, javaPath: str, maxRam: str, data={}):
+    def __init__(self, *, name: str, type: str, path: str, javaversion: str, maxRam: str, data=None):
+        if data is None:
+            data = {}
         super().__init__()
         self.name = name
         self.type = type
         self.path = path
-        self.javaPath = javaPath
+        self.javaversion = javaversion
         self.maxRam = maxRam
         self.data = data
     
@@ -111,17 +113,22 @@ class Server(HSL):
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.get_input(process, input_queue))
 
-    def check_process(self, process):
+    def check_process_exists(self, process):
         return psutil.pid_exists(process.pid)
 
-    def gen_run_command(self, export: bool = False) -> str:
-        javaexecPath = self.javaPath if os.name != 'posix' else (r'./../../' + self.javaPath if not self.config.direct_mode else r'./' + self.javaPath)
-        
+    async def gen_run_command(self, path, export: bool = False) -> str:
+        console.log(f'[Debug]: Path: {path}')
+        console.log(f'[Debug]: javaversion: {self.javaversion}')
+        javaexecPath = await Java().getJavaByJavaVersion(self.javaversion, path)
+
         if export:
             run_dir = os.getcwd()
             javaexecPath = os.path.join(run_dir, javaexecPath)
             run_command = self._build_run_command(javaexecPath, export=True)
-            return f'cd {os.path.join(os.getcwd(), self.path)}\n{run_command}'
+            return "\n".join([
+                "cd " + os.path.join(os.getcwd(), self.path),
+                run_command
+            ])
 
         return self._build_run_command(javaexecPath)
 
@@ -129,26 +136,58 @@ class Server(HSL):
         jvm_setting = self.data.get('jvm_setting', '')
 
         if self.type in ['vanilla', 'paper', 'fabric']:
-            return f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar {self.pathJoin("server.jar")}' if export else f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar server.jar'
-        
+            return " ".join([
+                javaexecPath,
+                "-Dfile.encoding=utf-8",
+                "-Xmx" + self.maxRam,
+                "-jar",
+                self.pathJoin("server.jar") if export else "server.jar"
+            ])
+
         mcVersion = self.data['mcVersion']
         forgeVersion = self.data['forgeVersion']
         mcMajorVersion = int(mcVersion.split('.')[1])
-        
+
         if mcMajorVersion >= 17:
-            args_path = f"@{self.pathJoin(f'libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/unix_args.txt')}" if os.name == 'posix' else f"@{self.pathJoin(f'libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/win_args.txt')}"
+            args_path = (
+                "@" + self.pathJoin(f"libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/unix_args.txt")
+                if os.name == 'posix' 
+                else "@" + self.pathJoin(f"libraries/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/win_args.txt")
+            )
+
             if jvm_setting:
                 console.log(f'[Debug]: Jvm Setting: {jvm_setting}')
-                return f'{javaexecPath}{jvm_setting} -Dfile.encoding=utf-8 -Xmx{self.maxRam} @user_jvm_args.txt {args_path} %*'
-            return f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} @user_jvm_args.txt {args_path} '
-        
-        return f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar {self.pathJoin(f"forge-{mcVersion}-{forgeVersion}.jar")}' if export else f'{javaexecPath} -Dfile.encoding=utf-8 -Xmx{self.maxRam} -jar forge-{mcVersion}-{forgeVersion}.jar'
+                return " ".join([
+                    javaexecPath + jvm_setting,
+                    "-Dfile.encoding=utf-8",
+                    "-Xmx" + self.maxRam,
+                    "@user_jvm_args.txt",
+                    args_path,
+                    "%*"
+                ])
 
-    async def run(self):
+            return " ".join([
+                javaexecPath,
+                "-Dfile.encoding=utf-8",
+                "-Xmx" + self.maxRam,
+                "@user_jvm_args.txt",
+                args_path
+            ])
+
+        return " ".join([
+            javaexecPath,
+            "-Dfile.encoding=utf-8",
+            "-Xmx" + self.maxRam,
+            "-jar",
+            self.pathJoin(f"forge-{mcVersion}-{forgeVersion}.jar")
+            if export else f"forge-{mcVersion}-{forgeVersion}.jar"
+        ])
+
+    async def run(self, path: str):
         if 'startup_cmd' in self.data:
             subprocess.Popen(self.data['startup_cmd'], cwd=self.path)
 
-        run_command = self.gen_run_command()
+        run_command = await self.gen_run_command(path)
 
         if self.config.debug:
             console.log(f'[Debug]: Run Command: {run_command}')
@@ -174,4 +213,5 @@ class Server(HSL):
         t1.join()
         console.print('[bold green]请输入任意内容以退出控制台')
         t2.join()
+        console.print('[bold green]控制台已退出')
         return

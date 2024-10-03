@@ -3,6 +3,6 @@
     "use_mirror": true,
     "workspace_dir": "workspace",
     "workspace_file": "workspace.json",
-    "autorun": "1",
-    "debug": false
+    "autorun": "",
+    "debug": true
 }

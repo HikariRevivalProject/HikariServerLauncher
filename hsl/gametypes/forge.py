@@ -7,63 +7,62 @@ from rich.console import Console
 from hsl.gametypes import vanilla
 from hsl.utils.download import downloadfile
 from hsl.utils.prompt import promptSelect
+from hsl.source.source import Source
 FORGE_REGEX = re.compile(r'(\w+)-(\w+)')
 console = Console()
 async def nameJoin(baseurl: str,mcVersion:str, forgeversion: str,category: str,format: str):
     return f'{baseurl}{mcVersion}-{forgeversion}/forge-{mcVersion}-{forgeversion}-{category}.{format}'
     #return baseurl + forgeversion + '/forge-' + forgeversion + '-' + category + '.' + format
-async def get_mcversions(source: dict,use_bmclapi: bool=False) -> list:
-    sources = source["forge"]['list']
+async def get_mcversions(source: Source,use_bmclapi: bool=False) -> list:
+    sources = source.forge.list
     if use_bmclapi:
         sources = sources[::-1]
-    for source in sources:
-        if source['type'] == 'bmclapi':
+    for forge_source in sources:
+        if forge_source.type == 'bmclapi':
             try:
-                response = requests.get(source['supportList'])
+                response = requests.get(forge_source.supportList) # type: ignore
                 if response.status_code == 200:
-                    versions = response.json()
-                    return versions
-            except:
+                    return response.json()
+            except Exception:
                 pass
-        if source['type'] == 'official':
+        if forge_source.type == 'official':
             try:
-                response = requests.get(source['metadata'])
+                response = requests.get(forge_source.metadata) # type: ignore
                 if response.status_code == 200:
-                    versions = list(response.json().keys())
-                    return versions
-            except:
+                    return list(response.json().keys())
+            except Exception:
                 pass
     return []
-async def get_forgeversions(source: dict,mcVersion: str,use_bmclapi: bool=False) -> list:
-    sources = source["forge"]['list']
+async def get_forgeversions(source: Source,mcVersion: str, use_bmclapi: bool=False) -> list:
+    sources = source.forge.list
     if use_bmclapi:
         sources = sources[::-1]
-    for source in sources:
-        if source['type'] == 'bmclapi':
+    for forge_source in sources:
+        if forge_source.type == 'bmclapi':
             try:
-                response = requests.get(source['getByVersion'].replace('{version}',mcVersion))
+                response = requests.get(forge_source.getByVersion.replace('{version}',mcVersion)) # type: ignore
                 if response.status_code == 200:
                     versions = response.json()
                     sorted_versions = sorted(versions,key=lambda i: i['build'],reverse=True)
                     installer_versions = [i for i in sorted_versions if 'files' in i and any(j.get('format') == 'jar' and j.get('category') == 'installer' for j in i.get('files', []))]
                     return [i['version'] for i in installer_versions]
-            except:
+            except Exception:
                 pass
-        if source['type'] == 'official':
+        if forge_source.type == 'official':
             try:
-                response = requests.get(source['metadata'])
+                response = requests.get(forge_source.metadata) # type: ignore
                 if response.status_code == 200:
                     versions = list(response.json()[mcVersion])[::-1]
                     return versions
-            except:
+            except Exception:
                 pass
     return []
-async def download_installer(source: dict,mcVersion: str,version: str,path: str,use_bmclapi: bool=False) -> bool:
-    sources = source["forge"]['list']
+async def download_installer(source: Source,mcVersion: str,version: str,path: str,use_bmclapi: bool=False) -> bool:
+    sources = Source.forge.list
     if use_bmclapi:
         sources = sources[::-1]
-    for source in sources:
-        if source['type'] == 'bmclapi':
+    for forge_source in sources:
+        if forge_source.type == 'bmclapi':
             if '-' in version:
                 mcVersion,version = re.findall(FORGE_REGEX,version)
             params = {
@@ -72,12 +71,10 @@ async def download_installer(source: dict,mcVersion: str,version: str,path: str,
                 'category': 'installer',
                 'format': 'jar'
             }
-            status = await downloadfile(source['download'],path,params=params)
-            return status
-        if source['type'] == 'official':
-            url = await nameJoin(source['download'],mcVersion,version,'installer','jar')
-            status = await downloadfile(url, path)
-            return status
+            return await downloadfile(forge_source.download, path, params=params) # type: ignore
+        if forge_source.type == 'official':
+            url = await nameJoin(forge_source.download, mcVersion, version, 'installer', 'jar') # type: ignore
+            return await downloadfile(url, path)
     return False
 async def run_install(javaPath: str,path: str):
     cmd = f'{javaPath} -jar forge-installer.jar --installServer'
@@ -91,17 +88,21 @@ async def install(self, serverName: str, serverPath: str, serverJarPath: str, da
         mcVersions = await vanilla.get_versions(self.source)
         _mcVersions = await get_mcversions(self.source, self.config.use_mirror)
         mcVersions = [x['id'] for x in mcVersions if x['type'] == 'release' and x['id'] in _mcVersions]
+        if not mcVersions:
+            console.print('[bold magenta]没有找到可用的 Minecraft 版本。')
+            return False
         index = await promptSelect(mcVersions, '请选择 Minecraft 版本:')
         mcVersion = mcVersions[index]
 
         javaPath = await self.Java.getJavaByGameVersion(mcVersion, path=self.config.workspace_dir)
+        javaVersion = await self.Java.getJavaVersion(mcVersion)
         forgeVersions = await get_forgeversions(self.source, mcVersion, self.config.use_mirror)
         index = await promptSelect(forgeVersions, '请选择 Forge 版本:')
         forgeVersion = forgeVersions[index]
-        #1.21-51.0.21
+        #like 1.21-51.0.21
         if '-' in forgeVersion:
             forgeVersion = forgeVersion.split('-')[1]
-            #51.0.21
+            #split to 51.0.21
         data['mcVersion'] = mcVersion
         data['forgeVersion'] = forgeVersion
 
@@ -116,4 +117,4 @@ async def install(self, serverName: str, serverPath: str, serverJarPath: str, da
             return False
         console.print('Forge 安装完成。')
 
-        return serverName, serverType, serverPath, javaPath, data
+        return serverName, serverType, serverPath, javaVersion, data

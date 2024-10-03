@@ -54,7 +54,7 @@ class Java(HSL):
             return '21'
         else:
             return '0'
-    async def checkJavaExist(self,javaVersion,path) -> bool:
+    async def checkJavaExist(self,javaVersion: str,path: str) -> bool:
         """
             Check if Java exists.
             Args: 
@@ -65,10 +65,12 @@ class Java(HSL):
                 bool: True if the java exists, False otherwise.
         """
 
-        if not os.path.exists(os.path.join(path, 'java', javaVersion, 'bin', JAVA_EXEC)):
-            return False
-        return True
-    async def downloadJava(self, javaVersion, path) -> bool:
+        return bool(
+            os.path.exists(
+                os.path.join(path, 'java', javaVersion, 'bin', JAVA_EXEC)
+            )
+        )
+    async def downloadJava(self, javaVersion: str, path: str) -> bool:
         """
             Download Java and return the status.
 
@@ -79,7 +81,7 @@ class Java(HSL):
             Returns: 
                 bool: True if the java is downloaded and extracted successfully, False otherwise.
         """
-        sources = self.source['java']['list']
+        sources = self.source.java.list
         if self.config.use_mirror:
             sources = sources[::-1]
         path = os.path.join(path,'java',javaVersion)
@@ -90,9 +92,9 @@ class Java(HSL):
         #get source
         for i in sources:
             if os.name == 'nt':
-                url = i['windows'][javaVersion]
-            if os.name == 'posix':
-                url = i['linux'][javaVersion]
+                url = i.windows[javaVersion]
+            elif os.name == 'posix':
+                url = i.linux[javaVersion]
             if await downloadfile(url,filename):
                 with zipfile.ZipFile(filename,'r') as file:
                     file.extractall(path)
@@ -120,7 +122,7 @@ class Java(HSL):
             await self.downloadJava(javaVersion, path)
         return os.path.join(javaPath, 'bin', JAVA_EXEC)
 
-    async def getJavaByJavaVersion(self, javaVersion:str, path:str) -> str:
+    async def getJavaByJavaVersion(self, javaVersion: str, path:str) -> str:
         """
             get java path by java version(if not exist, will call downloadJava)
 

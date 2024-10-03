@@ -42,7 +42,7 @@ Hikari Server Launcher is a simple, lightweight, and easy-to-use launcher/instal
 ## Contributing 贡献
 - 你可以从两方面对此项目贡献：
 - 提交 issue, pull request 来完善这个项目。
-- 编辑configs.json，这是特定配置的索引文件，个人时间有限无法全部适配，configs.json的格式可以参考 [config.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/spconfigs.json)，里面有详细的注释。
+- 编辑spconfigs.json，这是特定配置的索引文件，个人时间有限无法全部适配，spconfigs.json的格式可以参考 [spconfig.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/spconfigs.json)，里面有详细的注释。
 
 
 ## 致谢 Thanks

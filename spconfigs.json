@@ -2,7 +2,7 @@
 [
     {
         "name": "server.properties",
-        "?name": "! 配置文件显示在编辑处的名字",
+        "?name": "! 配置文件显示在特定配置编辑预览处的名字",
         "path": "server.properties",
         "?path": "! 配置文件的路径，子路径使用单个左斜线(/)分割",
         "description": "Minecraft服务器基本配置文件 包含端口，人数，正版等",

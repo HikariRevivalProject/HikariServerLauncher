@@ -34,6 +34,7 @@ console = Console()
 #         print(f"出现错误: {e}")
 #         return False
 async def downloadfile(url: str, path: str, params=None, timeout: int = 60, threads: int = 1) -> bool:
+    console.log(f"Downloading {url} to {path}")
     try:
         async with httpx.AsyncClient(timeout=timeout,params=params, limits=httpx.Limits(max_connections=threads)) as Client:
             response = await Client.get(url=url,)
@@ -47,10 +48,10 @@ async def downloadfile(url: str, path: str, params=None, timeout: int = 60, thre
                         file.write(data)
                 progressBar.close()
                 if total_size != 0 and progressBar.n != total_size:
-                    console.log(f"下载不完整 请检查网络（重新下载请删除服务器后重新安装）")
+                    console.log("下载不完整 请检查网络（重新下载请删除服务器后重新安装）")
                     return False
                 else:
-                    console.log(f"下载完成!")
+                    console.log("下载完成!")
                 return True
             else:
                 console.log(f"无法下载 HTTP 状态码: {response.status_code} （重新下载请删除服务器后重新安装）")

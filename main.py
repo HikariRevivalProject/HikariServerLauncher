@@ -1,3 +1,4 @@
+from logging import config
 import os
 import re
 import sys
@@ -5,10 +6,11 @@ import yaml
 import json
 import asyncio
 import noneprompt
+import winreg as reg
 import javaproperties
-from hsl.core.java import Java
 from hsl.utils import osfunc
 from hsl.core.server import Server
+from hsl.core.java import Java
 from typing import Callable
 from hsl.core.workspace import Workspace
 from hsl.core.main import HSL
@@ -17,8 +19,8 @@ from hsl.gametypes import fabric, forge, paper, vanilla
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
 
 OPTIONS_YN = ['是', '否']
-OPTIONS_ADVANCED = ['GUI测试', '取消']
-OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '取消']
+OPTIONS_ADVANCED = ['取消']
+OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '开机自启', '取消']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '高级选项', '退出']
 OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本' ,'取消']
@@ -26,15 +28,15 @@ OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启�
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
-
+AUTORUN_REG_HKEY = reg.HKEY_CURRENT_USER
+AUTORUN_REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 console = Console()
 
-class Main(HSL):
+class HSL_MAIN(HSL):
     def __init__(self):
         super().__init__()
         self.Workspace = Workspace()
         self.Java = Java()
-        
     async def welcome(self) -> None:
         """
             Welcome
@@ -47,11 +49,13 @@ class Main(HSL):
         console.print('设置已应用。')
         console.rule('配置完成')
         return
-    
     async def exit(self) -> None:
-        #exit the program
         sys.exit(0)
-
+    async def do_nothing(self) -> None:
+        """
+            Do nothing
+        """
+        pass
     async def create(self) -> None:
         """
             Create server
@@ -60,20 +64,20 @@ class Main(HSL):
         if not serverName:
             console.print('[bold magenta]服务器已存在。')
             return
-        
+
         console.print('服务器不存在，进入安装阶段。')
         serverPath = await self.Workspace.create(server_name=serverName)
         server_setting = await self.install(serverName=serverName, serverPath=serverPath)
         if not server_setting:
             console.print('[bold magenta]未安装服务器。')
             return
-        
-        serverName, serverType, serverPath, javaPath, data = server_setting # type: ignore
+
+        serverName, serverType, serverPath, javaversion, data = server_setting # type: ignore
         maxRam = await self.get_valid_max_ram()
-        if maxRam is None:
-            maxRam = str(OS_MAXRAM) + 'M'
-        server = Server(name=serverName, type=serverType, path=serverPath, javaPath=javaPath, maxRam=maxRam, data=data)
-        await self.Workspace.add(server)
+        await self.Workspace.add(
+            Server(name=serverName, type=serverType, path=serverPath, javaversion=javaversion, maxRam=maxRam, data=data)
+        )
+        console.print(f'[bold green]服务器 {serverName} 安装成功。')
 
     async def get_valid_server_name(self) -> str | None:
         """
@@ -83,13 +87,11 @@ class Main(HSL):
         serverName = await promptInput('请输入服务器名称:')
         while (not serverName.strip()) or (serverName in ['con','aux','nul','prn'] and os.name == 'nt'):
             serverName = await promptInput('名称非法，请重新输入:')
-        
+
         servers = self.Workspace.workspaces
-        if any(s['name'] == serverName for s in servers):
-            return None
-        return serverName
+        return None if any(s['name'] == serverName for s in servers) else serverName
     
-    async def get_valid_max_ram(self) -> str | None:
+    async def get_valid_max_ram(self) -> str:
         """
             Get valid max ram
             Return: str | None
@@ -112,22 +114,34 @@ class Main(HSL):
                 serverJarPath, 
                 data
         """
-
+        if self.config.use_mirror:
+            console.print('[bold red]你正在使用镜像源（BMCLAPI），若无法正常下载，请切换至官方源。')
         serverJarPath = os.path.join(serverPath, 'server.jar')
         
         gameType = await promptSelect(OPTIONS_GAMETYPE, '请选择服务器类型:')
-
-        install_methods: dict[int, Callable] = {
-            0: vanilla.install,
-            1: paper.install,
-            2: forge.install,
-            3: fabric.install
-        }
-        if gameType == 4:
+        if gameType == 0:
+            return await vanilla.install(self, serverName, serverPath, serverJarPath, {})
+        elif gameType == 1:
+            data = {
+                'experimental': await promptConfirm('是否下载实验性构建版本?')
+            }
+            return await paper.install(self, serverName, serverPath, serverJarPath, data)
+        elif gameType == 2:
+            return await forge.install(self, serverName, serverPath, serverJarPath, {})
+        elif gameType == 3:
+            return await fabric.install(self, serverName, serverPath, serverJarPath, {})
+        else:
             return False
-        data = {}
-        return await install_methods[gameType](self, serverName, serverPath, serverJarPath, data)
-
+        # install_methods: dict[int, Callable] = {
+        #     0: vanilla.install,
+        #     1: paper.install,
+        #     2: forge.install,
+        #     3: fabric.install
+        # }
+        # if gameType == 4:
+        #     return False
+        # data = {}
+        # return await install_methods[gameType](self, serverName, serverPath, serverJarPath, data)
     async def manage(self) -> None:
         if not self.Workspace.workspaces:
             console.print('[bold magenta]没有可用的服务器。')
@@ -140,13 +154,14 @@ class Main(HSL):
         index = await promptSelect(OPTIONS_MANAGE, f'{server.name} - 请选择操作:')
         
         manage_methods: dict[int, Callable] = {
-            0: server.run,
+            0: lambda: server.run(self.Workspace.dir),
             1: lambda: self.open_server_directory(server),
             2: lambda: self.editConfig(server),
             3: lambda: self.set_startup_command(index),
             4: lambda: self.set_jvm_settings(index),
             5: lambda: self.set_autorun(server),
-            6: lambda: self.export_start_script(server)
+            6: lambda: self.export_start_script(server),
+            len(OPTIONS_MANAGE)-1: lambda: self.do_nothing()
         }
         await manage_methods[index]()
         return
@@ -154,7 +169,7 @@ class Main(HSL):
     async def open_server_directory(self, server: Server) -> None:
         try:
             os.startfile(server.path)
-        except:
+        except Exception:
             console.print('[bold magenta]无法打开服务器目录。')
 
     async def set_startup_command(self, index: int) -> None:
@@ -177,9 +192,9 @@ class Main(HSL):
     async def export_start_script(self, server: Server) -> None:
         script_name = f'{server.name}.run.bat' if os.name == 'nt' else f'{server.name}.run.sh'
         with open(script_name, 'w') as f:
-            f.write(server.gen_run_command(export=True))
+            f.write(await server.gen_run_command(self.Workspace.dir, export=True))
         console.print(f'[green]生成启动脚本成功({script_name})')
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
 
     async def editConfig(self, server: Server) -> None:
         console.print('[blue bold]读取特定配置索引:')
@@ -258,7 +273,7 @@ class Main(HSL):
             key_info: dict  = editConfig['keys'][editKeyIndex]
             console.print(f'[bold white]Tips: {key_info["tips"]}')
             if key_info.get('danger', False):
-                console.print(f'[bold red]这是一个危险配置！修改前请三思！')
+                console.print('[bold red]这是一个危险配置！修改前请三思！')
             editValue = await self.input_new_value(editConfig, key_info)
             self.set_nested_value(config, key.split('.'), editValue)
             self.save_config_file(editConfig, config, server.path)
@@ -267,10 +282,7 @@ class Main(HSL):
     async def input_new_value(self, editConfig, key_info) -> str | int | bool | None:
         if key_info['type'] == "int":
             key = await promptInput('请输入新值(整数):')
-            if editConfig['type'] == 'properties':
-                return key
-            return int(key)
-
+            return key if editConfig['type'] == 'properties' else int(key)
         elif key_info['type'] == "str":
             return await promptInput('请输入新值(字符串):')
 
@@ -292,7 +304,7 @@ class Main(HSL):
                     return True
                 else:
                     return False
-        except:
+        except Exception:
             return False
     async def delete(self) -> None:
         console.rule('服务器删除')
@@ -312,11 +324,34 @@ class Main(HSL):
         settings_methods = {
             0: lambda: self.set_debug_mode(),
             1: lambda: self.set_mirror_priority(),
-            len(OPTIONS_SETTINGS) - 1: lambda: None
+            2: lambda: self.set_run_on_startup(),
+            len(OPTIONS_SETTINGS) - 1: lambda: self.do_nothing()
         }
-        await settings_methods.get(index, lambda: None)()
+        await settings_methods[index]()
         self.config.save()
+    async def set_run_on_startup(self):
+        
+        if not await promptConfirm(
+            '是否要将 Hikari Server Launcher 设为开机自启？'
+        ):
+            return
 
+        reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
+        query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
+        #check if HSL is already in the registry
+        try:
+            reg.QueryValueEx(query_reg_key, HSL_NAME)
+            console.print('[bold green]Hikari Server Launcher 已在开机自启，无需重复设置。')
+            if await promptConfirm('是否移除开机自启设置？'):
+                reg.DeleteValue(reg_key, HSL_NAME)
+            return
+        except FileNotFoundError:
+            pass
+        if os.name == 'nt':
+            exec_path = os.path.abspath(sys.argv[0])
+            reg.SetValueEx(reg_key, HSL_NAME, 0, reg.REG_SZ, exec_path)
+        else:
+            console.print('[bold magenta]当前系统不支持开机自启。')
     async def set_debug_mode(self):
         self.config.debug = await promptConfirm('开启调试模式？')
     async def set_mirror_priority(self):
@@ -325,16 +360,13 @@ class Main(HSL):
         index = await promptSelect(OPTIONS_ADVANCED, '高级选项：')
         
         advanced_methods = {
-            0: lambda: (),
-            1: lambda: self.exit()
+            len(OPTIONS_ADVANCED) - 1: lambda: self.do_nothing()
         }
         await advanced_methods[index]()
     
     async def mainMenu(self):
-        console.clear()
-        console.rule(f'{HSL_NAME} v{str(self.version/10)}')
+        console.rule(f'{HSL_NAME} [bold blue]v{str(self.version/10)}' + (' [white]- [bold red]Debug Mode' if self.config.debug else ''))
         console.set_window_title(f'{HSL_NAME} v{str(self.version/10)}')
-        console.print(f'[bold blue]信息：当前工作目录：[u]{self.Workspace.path}[/u], 最大内存：[u]{OS_MAXRAM}[/u]MB, 调试模式：[u]{self.config.debug}[/u], 镜像源优先：[u]{self.config.use_mirror}[/u], 自动启动：[u]{self.config.autorun}[/u]')
         while True:
             console.print(f'[bold gold]欢迎使用 {HSL_NAME}.')
             index = await promptSelect(OPTIONS_MENU, '菜单：')
@@ -353,30 +385,29 @@ class Main(HSL):
         server = await self.Workspace.getFromName(self.config.autorun)
         console.print(f'[bold blue]将于三秒后启动 {server.name}。键入Ctrl+C(^C)可取消.')
         await asyncio.sleep(3)
-        await server.run()
+        await server.run(self.Workspace.dir)
         exit()
 
-mainProgram = Main()
+mainProgram = HSL_MAIN()
 async def main():
     isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
     if isOutdated:
         console.print(f'[bold magenta]发现新版本，版本号：[u]{new/10}[/u]，建议及时更新')
-        await asyncio.sleep(3)
     if mainProgram.config.first_run:
         await mainProgram.welcome()
-        await mainProgram.mainMenu()
-    else:
-        if mainProgram.config.autorun:
-            try:
-                loop = asyncio.get_event_loop()
-                task = loop.create_task(mainProgram.autorun())
-                await asyncio.wait_for(task, None)
-            except (KeyboardInterrupt, asyncio.CancelledError):
-                mainProgram.config.autorun = ''
-                mainProgram.config.save()
-                console.print('自动启动已取消并重置，如需再次启用请重新设置。')
-                await asyncio.sleep(1)
-        await mainProgram.mainMenu()
+    if mainProgram.config.autorun:
+        try:
+            loop = asyncio.get_event_loop()
+            task = loop.create_task(mainProgram.autorun())
+            await asyncio.wait_for(task, None)
+
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            mainProgram.config.autorun = ''
+            mainProgram.config.save()
+            console.print('自动启动已取消并重置，如需再次启用请重新设置。')
+            await asyncio.sleep(1)
+
+    await mainProgram.mainMenu()
 
 if __name__ == '__main__':
     try:
@@ -386,8 +417,6 @@ if __name__ == '__main__':
     except noneprompt.CancelledError:
         console.print('[bold green]用户取消操作，已退出。')
     except Exception as e:
+        console.print(f'[bold red]发生未知错误: {e}')
         if mainProgram.config.debug:
-            console.print_exception()
-        else:
-            console.print(f'[bold red]发生未知错误: {e}')
             console.print_exception()

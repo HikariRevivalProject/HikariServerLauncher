@@ -13,7 +13,4 @@ test*.py
 .ssh/
 .cache/
 .idea/
-pack.py
-b64.txt
-templates.zip
-templates.py
+hsl-config.json
