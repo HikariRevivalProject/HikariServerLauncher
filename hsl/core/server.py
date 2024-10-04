@@ -1,5 +1,6 @@
 import os
 import psutil
+import zipfile
 import asyncio
 import subprocess
 from hsl.core.java import Java
@@ -215,3 +216,15 @@ class Server(HSL):
         t2.join()
         console.print('[bold green]控制台已退出')
         return
+    async def create_backup(self):
+        backup_path = os.path.join(os.getcwd(), 'backup')
+        if not os.path.exists(backup_path):
+            os.mkdir(backup_path)
+        backup_file = os.path.join(backup_path, f'{self.name}.zip')
+        with zipfile.ZipFile(backup_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(self.path):
+                for file in files:
+                    console.log(f'[Debug]: Add file: {file}')
+                    zf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), self.path))
+        return backup_file
+        

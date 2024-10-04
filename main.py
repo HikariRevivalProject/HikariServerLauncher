@@ -1,4 +1,3 @@
-from logging import config
 import os
 import re
 import sys
@@ -23,8 +22,9 @@ OPTIONS_ADVANCED = ['取消']
 OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '开机自启', '取消']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '高级选项', '退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本' ,'取消']
-
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '备份服务器' ,'取消']
+OPTIONS_JAVA = ['Java 6', 'Java 8', 'Java 11', 'Java 16', 'Java 17','Java 21', '取消']
+OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
@@ -151,7 +151,7 @@ class HSL_MAIN(HSL):
         console.rule('服务器管理')
         index = await promptSelect([x['name'] for x in self.Workspace.workspaces], '选择服务器:')
         server = await self.Workspace.get(index)
-        index = await promptSelect(OPTIONS_MANAGE, f'{server.name} - 请选择操作:')
+        _index = await promptSelect(OPTIONS_MANAGE, f'{server.name} - 请选择操作:')
         
         manage_methods: dict[int, Callable] = {
             0: lambda: server.run(self.Workspace.dir),
@@ -161,11 +161,29 @@ class HSL_MAIN(HSL):
             4: lambda: self.set_jvm_settings(index),
             5: lambda: self.set_autorun(server),
             6: lambda: self.export_start_script(server),
+            7: lambda: self.change_java_version(index),
+            8: lambda: self.change_max_ram(index),
+            9: lambda: self.create_backup(server),
             len(OPTIONS_MANAGE)-1: lambda: self.do_nothing()
         }
-        await manage_methods[index]()
+        await manage_methods[_index]()
         return
-
+    async def create_backup(self, server: Server) -> None:
+        if not await promptConfirm(f'!!! 确定要备份 {server.name} 吗？'): return
+        backup_file = await server.create_backup()
+        console.print(f'[bold green]备份文件：{backup_file}')   
+    async def change_max_ram(self, index: int) -> None:
+        maxRam = await self.get_valid_max_ram()
+        await self.Workspace.modify(index,'maxRam', maxRam)
+        console.print('[bold green]最大内存设置成功。')
+    async def change_java_version(self, index: int):
+        console.print('[bold red]注意：服务器将自动使用推荐的Java版本，随意修改可能会导致服务器无法启动。')
+        _index_java = await promptSelect(OPTIONS_JAVA, '请选择Java版本:')
+        if _index_java == len(OPTIONS_JAVA)-1:
+            return
+        await self.Workspace.modify(index, 'javaversion', OPTIONS_JAVA_VERSION[_index_java])
+        console.print('[bold green]Java版本设置成功。')
+        return
     async def open_server_directory(self, server: Server) -> None:
         try:
             os.startfile(server.path)
@@ -335,7 +353,7 @@ class HSL_MAIN(HSL):
             '是否要将 Hikari Server Launcher 设为开机自启？'
         ):
             return
-
+        #new feature: add to registry
         reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
         query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
         #check if HSL is already in the registry
