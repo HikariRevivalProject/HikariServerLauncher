@@ -13,4 +13,5 @@ test*.py
 .ssh/
 .cache/
 .idea/
+backup/
 hsl-config.json

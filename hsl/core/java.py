@@ -96,6 +96,7 @@ class Java(HSL):
             elif os.name == 'posix':
                 url = i.linux[javaVersion]
             if await downloadfile(url,filename):
+                console.print(f'[green] 下载Java成功，正在解压...')
                 with zipfile.ZipFile(filename,'r') as file:
                     file.extractall(path)
                 #change permission for linux

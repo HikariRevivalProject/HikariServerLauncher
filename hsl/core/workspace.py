@@ -11,15 +11,13 @@ class Workspace(HSL):
         self.dir = self.config.workspace_dir
         self.file = self.config.workspace_file
         self.path = os.path.join(self.dir, self.file)
-
-        self.workspace_init()
-    def workspace_init(self):
         try:
             self.load()
         except FileNotFoundError:
             if not os.path.exists(self.dir):
                 os.makedirs(self.dir)
             self.save()
+        
     def save(self):
         with open(self.path, 'w') as f:
             json.dump(self.workspaces, f)
@@ -81,3 +79,15 @@ class Workspace(HSL):
         self.workspaces[index]['data'][key] = value
         self.save()
         self.load()
+    async def getAll(self) -> list[Server]:
+        servers = []
+        for server in self.workspaces:
+            servers.append(Server(
+                name = server["name"],
+                type = server["type"],
+                path = server["path"],
+                javaversion = server["javaversion"],
+                maxRam = server["maxRam"],
+                data = server["data"]
+            ))
+        return servers

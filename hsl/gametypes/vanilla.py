@@ -36,7 +36,7 @@ async def install(self, serverName: str, serverPath: str, serverJarPath: str, da
         console.print('[bold magenta]没有找到可用的 Minecraft 版本。')
         return False
     mcVersion = mcVersions[await promptSelect(mcVersions, '请选择Minecraft服务器版本:')]
-    javaVersion = self.Java.getJavaVersion(mcVersion)
+    javaVersion = await self.Java.getJavaVersion(mcVersion)
     console.print(f'正在下载 Vanilla 服务端: {mcVersion}')
     if not await downloadServer(self.source, mcVersion, serverJarPath, self.config.use_mirror):
         console.print('[bold magenta]Vanilla 服务端下载失败。')

@@ -80,8 +80,8 @@ class Server(HSL):
                         f"{process_info['memory']} MB",
                     )
                 text = '\n'.join(output_text.split('\n')[::-1])
-                layout['monitor'].update(Panel(table, title='System Info'))
-                layout['output'].update(Panel(text, title='Output'))
+                layout['monitor'].update(Panel(table, title='Process Info'))
+                layout['output'].update(Panel(text, title='Console Output'))
                 live.update(layout)
                 del table
                 
@@ -107,7 +107,7 @@ class Server(HSL):
                 process.stdin.write(command_input.encode('utf-8') + b'\n')
                 process.stdin.flush()
             except OSError:
-                os._exit(0)
+                pass
         return
     def consoleInput(self, process, input_queue: Queue):
         loop = asyncio.new_event_loop()
@@ -216,15 +216,3 @@ class Server(HSL):
         t2.join()
         console.print('[bold green]控制台已退出')
         return
-    async def create_backup(self):
-        backup_path = os.path.join(os.getcwd(), 'backup')
-        if not os.path.exists(backup_path):
-            os.mkdir(backup_path)
-        backup_file = os.path.join(backup_path, f'{self.name}.zip')
-        with zipfile.ZipFile(backup_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for root, dirs, files in os.walk(self.path):
-                for file in files:
-                    console.log(f'[Debug]: Add file: {file}')
-                    zf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), self.path))
-        return backup_file
-        

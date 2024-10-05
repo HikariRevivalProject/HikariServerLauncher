@@ -3,11 +3,10 @@ rich
 httpx
 psutil
 pyyaml
+aiohttp
 requests
-pydantic==1.10.18
-starlette
 noneprompt
 aioconsole
 pyinstaller
 javaproperties
-uvicorn[standard]
+pydantic==1.10.18

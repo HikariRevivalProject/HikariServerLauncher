@@ -58,7 +58,7 @@ async def get_forgeversions(source: Source,mcVersion: str, use_bmclapi: bool=Fal
                 pass
     return []
 async def download_installer(source: Source,mcVersion: str,version: str,path: str,use_bmclapi: bool=False) -> bool:
-    sources = Source.forge.list
+    sources = source.forge.list
     if use_bmclapi:
         sources = sources[::-1]
     for forge_source in sources:

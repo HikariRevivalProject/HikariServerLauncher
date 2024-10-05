@@ -13,16 +13,17 @@ from hsl.core.java import Java
 from typing import Callable
 from hsl.core.workspace import Workspace
 from hsl.core.main import HSL
+from hsl.core.backup import Backup
 from rich.console import Console
 from hsl.gametypes import fabric, forge, paper, vanilla
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
 
-OPTIONS_YN = ['是', '否']
 OPTIONS_ADVANCED = ['取消']
 OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '开机自启', '取消']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
-OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '设置', '高级选项', '退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '备份服务器' ,'取消']
+OPTIONS_BACKUPS = ['备份服务器', '还原服务器', '删除备份', '取消']
+OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '备份中心', '设置', '高级选项', '退出']
+OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '取消']
 OPTIONS_JAVA = ['Java 6', 'Java 8', 'Java 11', 'Java 16', 'Java 17','Java 21', '取消']
 OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
@@ -37,6 +38,7 @@ class HSL_MAIN(HSL):
         super().__init__()
         self.Workspace = Workspace()
         self.Java = Java()
+        self.Backup = Backup()
     async def welcome(self) -> None:
         """
             Welcome
@@ -163,15 +165,10 @@ class HSL_MAIN(HSL):
             6: lambda: self.export_start_script(server),
             7: lambda: self.change_java_version(index),
             8: lambda: self.change_max_ram(index),
-            9: lambda: self.create_backup(server),
             len(OPTIONS_MANAGE)-1: lambda: self.do_nothing()
         }
         await manage_methods[_index]()
         return
-    async def create_backup(self, server: Server) -> None:
-        if not await promptConfirm(f'!!! 确定要备份 {server.name} 吗？'): return
-        backup_file = await server.create_backup()
-        console.print(f'[bold green]备份文件：{backup_file}')   
     async def change_max_ram(self, index: int) -> None:
         maxRam = await self.get_valid_max_ram()
         await self.Workspace.modify(index,'maxRam', maxRam)
@@ -202,7 +199,7 @@ class HSL_MAIN(HSL):
         console.print('[bold green]JVM参数设置成功。')
 
     async def set_autorun(self, server: Server) -> None:
-        if not await promptConfirm(f'!!! 确定要将 {server.name} 设为自动启动吗？'): return
+        if not await promptConfirm(f'确定要将 {server.name} 设为自动启动吗？'): return
         self.config.autorun = server.name
         self.config.save()
         console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
@@ -393,9 +390,10 @@ class HSL_MAIN(HSL):
                 0: lambda: self.create(),
                 1: lambda: self.manage(),
                 2: lambda: self.delete(),
-                3: lambda: self.setting(),
-                4: lambda: self.advanced_options(),
-                5: lambda: self.exit()
+                3: lambda: self.backups(),
+                4: lambda: self.setting(),
+                5: lambda: self.advanced_options(),
+                6: lambda: self.exit()
             }
             await menu_methods[index]()
 
@@ -405,6 +403,49 @@ class HSL_MAIN(HSL):
         await asyncio.sleep(3)
         await server.run(self.Workspace.dir)
         exit()
+    async def backups(self):
+        console.rule('备份管理')
+        backup_methods: dict[int, Callable] = {
+            0: lambda: self.create_backup(),
+            1: lambda: self.restore_backup(),
+            2: lambda: self.delete_backup(),
+            len(OPTIONS_BACKUPS) - 1: lambda: self.do_nothing()
+        }
+        index = await promptSelect(OPTIONS_BACKUPS, '备份管理：')
+        await backup_methods[index]()
+    async def create_backup(self):
+        servers = await self.Workspace.getAll()
+        server_index = await promptSelect([x.name for x in servers], '请选择要备份的服务器:')
+        server = servers[server_index]
+        with console.status(f'正在备份 {server.name}...'):
+            backup_file = await self.Backup.backup_server(server)
+        print(f"{server.name} 的备份已保存至 {backup_file}")
+        return True
+    async def restore_backup(self):
+        servers = await self.Workspace.getAll()
+        server_index = await promptSelect([x.name for x in servers], '请选择要恢复备份的服务器:')
+        server = servers[server_index]
+
+        backups = await self.Backup.get_backup_list()
+        if not backups:
+            console.print('[bold magenta]没有可用的备份。')
+            return
+        backup_index = await promptSelect([x for x in backups], '请选择要恢复的备份:')
+        backup_file = backups[backup_index]
+        with console.status(f'正在恢复 {server.name}...'):
+            await self.Backup.restore_backup(server, backup_file)
+        console.print(f"{server.name} 的备份已恢复。")
+        return True
+    async def delete_backup(self):
+        backups = await self.Backup.get_backup_list()
+        if not backups:
+            console.print('[bold magenta]没有可用的备份。')
+            return
+        backup_index = await promptSelect([x for x in backups], '请选择要删除的备份:')
+        backup_file = backups[backup_index]
+        if await promptConfirm(f'确定要删除 {backup_file} 吗?'):
+            await self.Backup.delete_backup(backup_file)
+        return True
 
 mainProgram = HSL_MAIN()
 async def main():
