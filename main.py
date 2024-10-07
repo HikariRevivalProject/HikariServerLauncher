@@ -345,15 +345,6 @@ class HSL_MAIN(HSL):
         await settings_methods[index]()
         self.config.save()
     async def set_run_on_startup(self):
-        
-        if not await promptConfirm(
-            '是否要将 Hikari Server Launcher 设为开机自启？'
-        ):
-            return
-        #new feature: add to registry
-        reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
-        query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
-        #check if HSL is already in the registry
         try:
             reg.QueryValueEx(query_reg_key, HSL_NAME)
             console.print('[bold green]Hikari Server Launcher 已在开机自启，无需重复设置。')
@@ -362,6 +353,16 @@ class HSL_MAIN(HSL):
             return
         except FileNotFoundError:
             pass
+
+        if not await promptConfirm(
+            '是否要将 Hikari Server Launcher 设为开机自启？'
+        ):
+            return
+        #new feature: add to registry
+        reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
+        query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
+        #check if HSL is already in the registry
+        
         if os.name == 'nt':
             exec_path = os.path.abspath(sys.argv[0])
             reg.SetValueEx(reg_key, HSL_NAME, 0, reg.REG_SZ, exec_path)
@@ -380,10 +381,10 @@ class HSL_MAIN(HSL):
         await advanced_methods[index]()
     
     async def mainMenu(self):
-        console.rule(f'{HSL_NAME} [bold blue]v{str(self.version/10)}' + (' [white]- [bold red]Debug Mode' if self.config.debug else ''))
-        console.set_window_title(f'{HSL_NAME} v{str(self.version/10)}')
         while True:
-            console.print(f'[bold gold]欢迎使用 {HSL_NAME}.')
+            console.rule(f'{HSL_NAME} [bold blue]v{str(self.version/10)}' + (' [white]- [bold red]Debug Mode' if self.config.debug else ''))
+            console.set_window_title(f'{HSL_NAME} v{str(self.version/10)}' + (' [white]- [bold red]Debug Mode' if self.config.debug else ''))
+            console.print(f'[bold blue]你正在运行{HSL_NAME} 版本号：[u]{self.version/10}[/u]，次要版本：[u]{self.minor_version}[/u]')
             try:
                 index = await promptSelect(OPTIONS_MENU, '菜单：')
             except (KeyboardInterrupt, asyncio.CancelledError):

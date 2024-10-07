@@ -8,7 +8,7 @@ VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 
 def make_request(url: str, error_message: str) -> dict:
     try:
-        response = requests.get(url,timeout=5)
+        response = requests.get(url,timeout=3)
         if response.status_code == 200:
             return response.json()
         logger.error(f'{error_message}，状态码：{response.status_code}')

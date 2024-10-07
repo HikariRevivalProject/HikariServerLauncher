@@ -1,6 +1,5 @@
 import os
 import psutil
-import zipfile
 import asyncio
 import subprocess
 from hsl.core.java import Java

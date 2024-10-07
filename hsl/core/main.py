@@ -5,7 +5,7 @@ import sys
 import platform
 console = Console()
 HSL_VERSION = 16
-
+HSL_VERSION_MINOR = 3
 OS_ARCH = platform.machine()
 if OS_ARCH != 'AMD64':
     console.print(f'当前系统架构{OS_ARCH}不支持，请使用AMD64架构的设备/系统运行.')
@@ -28,6 +28,7 @@ class HSL:
         self.source = SOURCE
         self.spconfigs = SPCONFIGS
         self.flag_outdated, self.latest_version = VERSION_INFO
+        self.minor_version = HSL_VERSION_MINOR
         if not self.source or not self.spconfigs:
             console.print('加载源数据失败，请检查网络连接.')
             sys.exit(1)

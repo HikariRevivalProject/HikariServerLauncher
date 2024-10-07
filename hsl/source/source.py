@@ -1,4 +1,3 @@
-from click import Option
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 class VanillaSource(BaseModel):
