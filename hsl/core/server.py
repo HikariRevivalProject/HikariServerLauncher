@@ -95,11 +95,18 @@ class Server(HSL):
     async def get_input(self, process, input_queue: Queue):
         while True:
             try:
-                command_input = await ainput(f'({self.name}) >>> ')
-            except (KeyboardInterrupt, EOFError):
+                command_input = await ainput(f'{self.name} >>> ')
+            except (KeyboardInterrupt,asyncio.exceptions.CancelledError):
                 console.log("已退出输入")
                 process.kill()
                 break
+            except EOFError:
+                console.log("已退出输入")
+                process.kill()
+                break
+            except Exception as e:
+                console.log(f'输入错误: {e}')
+                continue
             input_queue.put(command_input)
             if input_queue.get() is None:
                 break
@@ -118,8 +125,6 @@ class Server(HSL):
         return psutil.pid_exists(process.pid)
 
     async def gen_run_command(self, path, export: bool = False) -> str:
-        console.log(f'[Debug]: Path: {path}')
-        console.log(f'[Debug]: javaversion: {self.javaversion}')
         javaexecPath = await Java().getJavaByJavaVersion(self.javaversion, path)
 
         if export:
@@ -185,8 +190,19 @@ class Server(HSL):
         ])
 
     async def run(self, path: str):
-        if 'startup_cmd' in self.data:
-            subprocess.Popen(self.data['startup_cmd'], cwd=self.path)
+        startup_cmd = self.data.get('startup_cmd', '')
+        if not startup_cmd:
+            console.log('[bold red]启动命令为空')
+        else:
+            try:
+                subprocess.Popen(startup_cmd, cwd=self.path)
+            except Exception as e:
+                console.log(f'[bold red]启动命令执行失败: {e}')
+        # if 'startup_cmd' in self.data:
+        #     if not self.data.get('startup_cmd', ''):
+        #         console.log('[bold red]启动命令为空')
+        #     else:
+        #         subprocess.Popen(self.data['startup_cmd'], cwd=self.path)
 
         run_command = await self.gen_run_command(path)
 
@@ -208,11 +224,13 @@ class Server(HSL):
         t1 = Thread(target=self.consoleOutput, args=(process,))
         t2 = Thread(target=self.consoleInput, args=(process, input_queue))
 
+        
         t1.start()
         t2.start()
+        
 
         t1.join()
-        console.print('[bold green]请输入任意内容以退出控制台')
+        console.print('[bold green]键入Ctrl+C以退出控制台')
         t2.join()
         console.print('[bold green]控制台已退出')
         return

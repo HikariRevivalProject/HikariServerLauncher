@@ -1,4 +1,4 @@
-from noneprompt import ListPrompt, InputPrompt, ConfirmPrompt, Choice
+from noneprompt import ListPrompt, InputPrompt, Choice
 import asyncio
 OPTIONS_YN = ['是', '否']
 async def promptSelect(options: list,prompt: str) -> int:

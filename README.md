@@ -6,52 +6,49 @@
 [![Telegram](https://img.shields.io/badge/Chat-Telegram-27A7E7)](https://t.me/hikariserverlauncher)
 [![QQ](https://img.shields.io/badge/Chat-QQ-27A7E7)](https://qm.qq.com/q/bUTqWXnwje)
 # Hikari Server Launcher
-Hikari Server Launcher 是一个简单、轻量级的，易用的Minecraft服务器安装工具。
-Hikari Server Launcher is a simple, lightweight, and easy-to-use launcher/installer for Minecraft Server.
 
+Hikari Server Launcher 是一个简单、轻量级且易于使用的Minecraft服务器启动与安装工具。它旨在简化Minecraft服务器的设置过程，让用户能够快速访问和管理自己的游戏服务器。
 
-## What Can It Do? 可以做什么？
-- Download and install Vanilla Minecraft Server
-- Download and install Forge|Fabric|Neoforge(TODO)
-- Manage your Servers in console.
-- 下载并安装原版Minecraft服务器
-- 下载并安装Forge | Fabric | Neoforge（还没做）
-- 通过控制台管理你的服务器
+## 功能特性
 
+- 自动下载和安装原版Minecraft服务器
+- 支持Forge、Fabric及Neoforge的下载与安装（Neoforge功能正在开发中）
+- 通过控制台轻松管理多个服务器实例
+- 提供详细的安装和操作指导
+- 轻量级，无需安装额外的软件
+- 支持Windows、Linux (AMD64)
+- 快捷创建服务器备份，并可恢复至原服务器
 
-## Advantages 优势
-- Download and install Minecraft Server and Java Environment automatically.
-- Server files are stored in separate directories, which do not interfere with each other.
-- Easy to delete your server.
-- 自动下载安装服务器，Java环境
-- 各个服务器文件存放在单独的目录，不会相互干扰。
-- 便于删库跑路。
+## 优势
 
+- 自动下载并配置Minecraft服务器及所需的Java环境
+- 服务器文件存放在独立目录中，避免互相干扰
+- 便于删除不再使用的服务器
 
-## How to Use? 如何使用？
-1. Download the latest version of Hikari Server Launcher from [Actions](https://github.com/Hikari16665/HikariServerLauncher/actions)
-2. Run HikariServerLauncher.exe
-3. Follow the instructions on the screen to install the server.
-4. Enjoy!
-1. 从 [Actions](https://github.com/Hikari16665/HikariServerLauncher/actions) 中下载最新版本的 Hikari Server Launcher 
-2. 解压文件并运行 HikariServerLauncher.exe
-3. 按照屏幕上的提示安装服务器。
-4. 完事了！
+## 使用说明
 
+1. 从 [Actions](https://github.com/Hikari16665/HikariServerLauncher/actions) 下载最新版本的 Hikari Server Launcher。
+2. 解压文件并运行 `HikariServerLauncher.exe`。
+3. 按照屏幕上的提示完成服务器安装。
+4. 尽情享受你的Minecraft服务器体验！
 
-## Contributing 贡献
-- 你可以从两方面对此项目贡献：
-- 提交 issue, pull request 来完善这个项目。
-- 编辑spconfigs.json，这是特定配置的索引文件，个人时间有限无法全部适配，spconfigs.json的格式可以参考 [spconfig.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/spconfigs.json)，里面有详细的注释。
+## 贡献指南
 
+欢迎您参与到这个项目中来！您可以通过以下方式贡献：
 
-## 致谢 Thanks
+- 提交问题（Issue）或拉取请求（Pull Request）来改进本项目。
+- 编辑 `spconfigs.json` 文件，以适应特定配置（该文件格式可参考 [spconfig.json](https://github.com/Hikari16665/HikariServerLauncher/blob/main/spconfigs.json)，其中包含详细注释）。
+
+## 致谢
+
+感谢以下项目和个人的支持：
+
 - [Hikari](https://github.com/Hikari16665) 我自己
+- [OpenBMCLAPI](https://github.com/bangbang93/openbmclapi) 提供Minecraft服务端下载
+- [MC灵依资源站](https://mcres.cn/) 提供Java镜像源
+- [辰隙互联](https://www.singsi.cn) 提供服务器支持
+- GloryGods 提供Java镜像源
 
-站点：
-- [OpenBMCLAPI](https://github.com/bangbang93/openbmclapi) OpenBMCLAPI 提供Minecraft服务端下载
-- [MC灵依资源站](https://mcres.cn/) 提供了 Java 镜像源
-- [辰隙互联](https://www.singsi.cn) 提供了 服务器
-
-个人：
-- GloryGods 提供了 Java 镜像源
+希望您喜欢使用 Hikari Server Launcher！如有任何问题或建议，欢迎随时与我们联系。
+[![Telegram](https://img.shields.io/badge/Chat-Telegram-27A7E7)](https://t.me/hikariserverlauncher)
+[![QQ](https://img.shields.io/badge/Chat-QQ-27A7E7)](https://qm.qq.com/q/bUTqWXnwje)

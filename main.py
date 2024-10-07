@@ -235,7 +235,7 @@ class HSL_MAIN(HSL):
                 console.print(f'[bold magenta]{config_info["name"]} - 配置文件不存在。')
                 continue
             
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 config = self.load_config_file(config_info, f)
             console.print(f'[bold green]{config_info["name"]} - 读取成功。')
             if any(self.get_nested_value(config, key_info['key'].split('.')) is not None for key_info in config_info['keys']):
@@ -384,7 +384,10 @@ class HSL_MAIN(HSL):
         console.set_window_title(f'{HSL_NAME} v{str(self.version/10)}')
         while True:
             console.print(f'[bold gold]欢迎使用 {HSL_NAME}.')
-            index = await promptSelect(OPTIONS_MENU, '菜单：')
+            try:
+                index = await promptSelect(OPTIONS_MENU, '菜单：')
+            except (KeyboardInterrupt, asyncio.CancelledError):
+                pass
             
             menu_methods: dict[int, Callable] = {
                 0: lambda: self.create(),
