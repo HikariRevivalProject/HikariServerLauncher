@@ -1,6 +1,7 @@
 tqdm
 rich
 httpx
+regex
 psutil
 pyyaml
 aiohttp
