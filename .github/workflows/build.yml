@@ -32,6 +32,7 @@ jobs:
           nuitka-version: main
           script-name: main.py
           onefile: true
+          mingw64: true
           windows-icon-from-ico: HSL.ico
           company-name: HikariRevivalProject
           product-name: HikariServerLauncher
@@ -42,7 +43,6 @@ jobs:
       - name: Upload executable
         uses: actions/upload-artifact@v3
         with:
-          name: HikariServerLauncher-${{ vars.VERSION }}-${{ runner.os}}-${{ github.sha }}.exe
           path: |
             build/*.exe
             build/*.bin
