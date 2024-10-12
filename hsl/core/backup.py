@@ -20,14 +20,16 @@ class Backup():
                     relative_path = os.path.relpath(file_path, start=config.workspace_dir)
                     zip_file.write(file_path, arcname=relative_path)
         return backup_file
-    async def get_backup_list(self):
+    async def get_backup_list(self) -> list[str]:
         backup_dir = config.backup_dir
         backup_list = []
         if os.path.exists(backup_dir):
-            for file in os.listdir(backup_dir):
-                if regex.match(REGEX_BACKUP_FILE, file):
-                    backup_list.append(file)
-            return backup_list
+            backup_list.extend(
+                file
+                for file in os.listdir(backup_dir)
+                if regex.match(REGEX_BACKUP_FILE, file)
+            )
+        return backup_list
     async def restore_backup(self, server: Server, backup_file: str):
         backup_dir = config.backup_dir
         #remove old server files

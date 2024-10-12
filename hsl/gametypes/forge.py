@@ -3,6 +3,7 @@ import re
 import os
 import subprocess
 import psutil
+import asyncio
 from rich.console import Console
 from hsl.gametypes import vanilla
 from hsl.utils.download import downloadfile
@@ -79,9 +80,11 @@ async def download_installer(source: Source,mcVersion: str,version: str,path: st
 async def run_install(javaPath: str,path: str):
     cmd = f'{javaPath} -jar forge-installer.jar --installServer'
     console.log(f'Run Forge Install Args: {cmd}')
-    Process = subprocess.Popen(args=cmd.split(" "),cwd=path)
-    while psutil.pid_exists(Process.pid):
-        pass
+    with console.status('Forge 安装中，请稍作等待...', spinner='bouncingBar'):
+        Process = subprocess.Popen(args=cmd.split(" "),stdout=subprocess.PIPE,cwd=path)
+        while psutil.pid_exists(Process.pid):
+            for line in iter(Process.stdout.readline, b''): # type: ignore
+                console.print(line.decode('utf-8').strip())
     return True
 async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):
         serverType = 'forge'

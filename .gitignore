@@ -16,3 +16,10 @@ test*.py
 backup/
 hsl-config.json
 *.run.bat
+*.exe
+*.dll
+*.so
+*.dylib
+*.build/
+*.dist/
+nuitka-crash-report.xml

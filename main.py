@@ -1,15 +1,20 @@
 import os
 import re
 import sys
+import threading
 import yaml
 import json
 import asyncio
 import noneprompt
-import winreg as reg
+try:
+    import winreg as reg
+except:
+    pass
 import javaproperties
 from hsl.utils import osfunc
 from hsl.core.server import Server
 from hsl.core.java import Java
+from hsl.core.checks import check_update
 from typing import Callable
 from hsl.core.workspace import Workspace
 from hsl.core.main import HSL
@@ -255,7 +260,6 @@ class HSL_MAIN(HSL):
             if config is None:
                 return None
         return config
-
     def set_nested_value(self, config, keys, value):
         for key in keys[:-1]:
             config = config.setdefault(key, {})
@@ -286,6 +290,8 @@ class HSL_MAIN(HSL):
             
             key, _ = editableKeys[editKeyIndex]
             key_info: dict  = editConfig['keys'][editKeyIndex]
+            value = self.get_nested_value(config, key.split('.'))
+            console.print(f'[bold green]{key_info["name"]} - 当前值: {value}')
             console.print(f'[bold white]Tips: {key_info["tips"]}')
             if key_info.get('danger', False):
                 console.print('[bold red]这是一个危险配置！修改前请三思！')
@@ -305,6 +311,9 @@ class HSL_MAIN(HSL):
             if editConfig['type'] == 'properties':
                 return 'true' if await promptConfirm('请选择新值:') else 'false'
             return await promptConfirm('请选择新值:')
+        elif key_info['type'] == "choice":
+            choice_index = await promptSelect(key_info['choices'], '请选择新值:')
+            return key_info['choices'][choice_index]
         return None
 
     def save_config_file(self, editConfig, config, server_path) -> bool:
@@ -345,6 +354,10 @@ class HSL_MAIN(HSL):
         await settings_methods[index]()
         self.config.save()
     async def set_run_on_startup(self):
+        #new feature: add to registry
+        reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
+        query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
+        #check if HSL is already in the registry
         try:
             reg.QueryValueEx(query_reg_key, HSL_NAME)
             console.print('[bold green]Hikari Server Launcher 已在开机自启，无需重复设置。')
@@ -353,16 +366,10 @@ class HSL_MAIN(HSL):
             return
         except FileNotFoundError:
             pass
-
         if not await promptConfirm(
             '是否要将 Hikari Server Launcher 设为开机自启？'
         ):
             return
-        #new feature: add to registry
-        reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
-        query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
-        #check if HSL is already in the registry
-        
         if os.name == 'nt':
             exec_path = os.path.abspath(sys.argv[0])
             reg.SetValueEx(reg_key, HSL_NAME, 0, reg.REG_SZ, exec_path)
@@ -434,7 +441,7 @@ class HSL_MAIN(HSL):
         if not backups:
             console.print('[bold magenta]没有可用的备份。')
             return
-        backup_index = await promptSelect([x for x in backups], '请选择要恢复的备份:')
+        backup_index = await promptSelect(list(backups), '请选择要恢复的备份:')
         backup_file = backups[backup_index]
         with console.status(f'正在恢复 {server.name}...'):
             await self.Backup.restore_backup(server, backup_file)
@@ -445,7 +452,7 @@ class HSL_MAIN(HSL):
         if not backups:
             console.print('[bold magenta]没有可用的备份。')
             return
-        backup_index = await promptSelect([x for x in backups], '请选择要删除的备份:')
+        backup_index = await promptSelect(list(backups), '请选择要删除的备份:')
         backup_file = backups[backup_index]
         if await promptConfirm(f'确定要删除 {backup_file} 吗?'):
             await self.Backup.delete_backup(backup_file)
@@ -453,9 +460,8 @@ class HSL_MAIN(HSL):
 
 mainProgram = HSL_MAIN()
 async def main():
-    isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
-    if isOutdated:
-        console.print(f'[bold magenta]发现新版本，版本号：[u]{new/10}[/u]，建议及时更新')
+    cutask = asyncio.create_task(check_update())
+    # isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
     if mainProgram.config.first_run:
         await mainProgram.welcome()
     if mainProgram.config.autorun:
@@ -471,6 +477,7 @@ async def main():
             await asyncio.sleep(1)
 
     await mainProgram.mainMenu()
+    await cutask
 
 if __name__ == '__main__':
     try:
