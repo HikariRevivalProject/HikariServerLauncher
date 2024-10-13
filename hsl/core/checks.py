@@ -8,7 +8,7 @@ DOWNLOAD_SOURCE = r'https://hsl.hikari.bond/source.json'
 SPCONFIGS_SOURCE = r'https://hsl.hikari.bond/spconfigs.json'
 VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 HSL_VERSION = 16
-HSL_VERSION_MINOR = 4
+HSL_VERSION_MINOR = 5
 
 console = Console()
 async def make_request(url: str, error_message: str) -> dict:
