@@ -32,7 +32,7 @@ jobs:
           nuitka-version: main
           script-name: main.py
           onefile: true
-          python-debug: true
+          show-scons: true
           mingw64: true
           windows-icon-from-ico: HSL.ico
           company-name: HikariRevivalProject
@@ -40,7 +40,6 @@ jobs:
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
           copyright: "Copyright 2024 Hikari"
-          windows-uac-admin: true
       - name: Upload executable
         uses: actions/upload-artifact@v3
         with:
