@@ -8,8 +8,9 @@ import platform
 console = Console()
 
 OS_ARCH = platform.machine()
+console.log(f'OS_ARCH: {OS_ARCH}')
 if OS_ARCH not in ['AMD64', 'x86_64']:
-    console.print(f'当前系统架构{OS_ARCH}不支持，请使用AMD64架构的设备/系统运行.')
+    console.print(f'当前系统架构{OS_ARCH}不支持，请使用x86_64/AMD64架构的系统运行.')
     sys.exit(1)
 with console.status('[bold purple]正在启动 Hikari Server Launcher...',spinner='material'):
     console.print('[bold green]加载信息中，请稍后...')

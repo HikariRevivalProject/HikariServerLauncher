@@ -74,11 +74,11 @@ source = {
             "list":[
                 {
                     "type":"stable",
-                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/118/downloads/paper-1.21.1-118.jar"
+                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/122/downloads/paper-1.21.1-122.jar"
                 },
                 {
                     "type":"experimental",
-                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/118/downloads/paper-1.21.1-118.jar"
+                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/122/downloads/paper-1.21.1-122.jar"
                 }
             ]
         }

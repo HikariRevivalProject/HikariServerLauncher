@@ -1,41 +1,45 @@
 import os
 import re
 import sys
-import threading
 import yaml
-import json
 import asyncio
 import noneprompt
 try:
     import winreg as reg
 except:
     pass
+import webbrowser
 import javaproperties
 from hsl.utils import osfunc
 from hsl.core.server import Server
 from hsl.core.java import Java
 from hsl.core.checks import check_update
 from typing import Callable
+from rich.table import Table
 from hsl.core.workspace import Workspace
 from hsl.core.main import HSL
 from hsl.core.backup import Backup
+from hsl.core.sponsor import get_sponsor_list
 from rich.console import Console
 from hsl.gametypes import fabric, forge, paper, vanilla
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
-
+HELP_URL = r'https://docs.qq.com/doc/DY3pnS1hFVm1uYWlp'
 OPTIONS_ADVANCED = ['取消']
 OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '开机自启', '取消']
 OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
 OPTIONS_BACKUPS = ['备份服务器', '还原服务器', '删除备份', '取消']
-OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '备份中心', '设置', '高级选项', '退出']
+OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '备份中心', '设置', '高级选项','赞助者名单', '退出']
 OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '取消']
 OPTIONS_JAVA = ['Java 6', 'Java 8', 'Java 11', 'Java 16', 'Java 17','Java 21', '取消']
 OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
-AUTORUN_REG_HKEY = reg.HKEY_CURRENT_USER
-AUTORUN_REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
+try:
+    AUTORUN_REG_HKEY = reg.HKEY_CURRENT_USER # type: ignore
+    AUTORUN_REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
+except NameError:
+    pass
 console = Console()
 
 class HSL_MAIN(HSL):
@@ -48,6 +52,10 @@ class HSL_MAIN(HSL):
         """
             Welcome
         """
+        try:
+            webbrowser.open(HELP_URL, new=1)
+        except webbrowser.Error:
+            console.print(f'[bold magenta]无法打开帮助文档。请自行查阅{HELP_URL}')
         console.rule('配置设置')
         console.print('如果你的服务器环境在国内, 推荐使用镜像源源以获得更好的速度。\n是否使用镜像源优先? (默认: 否)\n')
         self.config.use_mirror = await promptConfirm('是否使用镜像源优先?')
@@ -122,7 +130,7 @@ class HSL_MAIN(HSL):
                 data
         """
         if self.config.use_mirror:
-            console.print('[bold red]你正在使用镜像源（BMCLAPI），若无法正常下载，请切换至官方源。')
+            console.print('[bold red]镜像源优先设置已启用，部分下载将优先使用镜像源。若无法正常下载，请尝试切换至官方源。')
         serverJarPath = os.path.join(serverPath, 'server.jar')
         
         gameType = await promptSelect(OPTIONS_GAMETYPE, '请选择服务器类型:')
@@ -188,7 +196,7 @@ class HSL_MAIN(HSL):
         return
     async def open_server_directory(self, server: Server) -> None:
         try:
-            os.startfile(server.path)
+            os.startfile(server.path) # type: ignore
         except Exception:
             console.print('[bold magenta]无法打开服务器目录。')
 
@@ -233,16 +241,14 @@ class HSL_MAIN(HSL):
     async def get_editable_configs(self, configs, server: Server) -> list:
         editableConfigs = []
         for config_info in configs:
-            console.print(f'[bold green]尝试读取配置文件：{config_info["name"]}')
             config_path = os.path.join(server.path, *config_info['path'].split('/'))
             
             if not os.path.exists(config_path):
-                console.print(f'[bold magenta]{config_info["name"]} - 配置文件不存在。')
                 continue
             
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = self.load_config_file(config_info, f)
-            console.print(f'[bold green]{config_info["name"]} - 读取成功。')
+            console.print(f'Loaded conig file{config_info["name"]}.')
             if any(self.get_nested_value(config, key_info['key'].split('.')) is not None for key_info in config_info['keys']):
                 editableConfigs.append((config_info,config))
         return editableConfigs
@@ -354,27 +360,28 @@ class HSL_MAIN(HSL):
         await settings_methods[index]()
         self.config.save()
     async def set_run_on_startup(self):
-        #new feature: add to registry
-        reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
-        query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
-        #check if HSL is already in the registry
-        try:
-            reg.QueryValueEx(query_reg_key, HSL_NAME)
-            console.print('[bold green]Hikari Server Launcher 已在开机自启，无需重复设置。')
-            if await promptConfirm('是否移除开机自启设置？'):
-                reg.DeleteValue(reg_key, HSL_NAME)
-            return
-        except FileNotFoundError:
-            pass
-        if not await promptConfirm(
-            '是否要将 Hikari Server Launcher 设为开机自启？'
-        ):
-            return
         if os.name == 'nt':
+            #new feature: add to registry
+            reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
+            query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
+            #check if HSL is already in the registry
+            try:
+                reg.QueryValueEx(query_reg_key, HSL_NAME)
+                console.print('[bold green]Hikari Server Launcher 已在开机自启，无需重复设置。')
+                if await promptConfirm('是否移除开机自启设置？'):
+                    reg.DeleteValue(reg_key, HSL_NAME)
+                return
+            except FileNotFoundError:
+                pass
+            if not await promptConfirm(
+                '是否要将 Hikari Server Launcher 设为开机自启？'
+            ):
+                return
             exec_path = os.path.abspath(sys.argv[0])
             reg.SetValueEx(reg_key, HSL_NAME, 0, reg.REG_SZ, exec_path)
         else:
             console.print('[bold magenta]当前系统不支持开机自启。')
+            return
     async def set_debug_mode(self):
         self.config.debug = await promptConfirm('开启调试模式？')
     async def set_mirror_priority(self):
@@ -404,10 +411,19 @@ class HSL_MAIN(HSL):
                 3: lambda: self.backups(),
                 4: lambda: self.setting(),
                 5: lambda: self.advanced_options(),
-                6: lambda: self.exit()
+                6: lambda: self.get_sponsor_list(),
+                7: lambda: self.exit()
             }
             await menu_methods[index]()
-
+    async def get_sponsor_list(self):
+        table = Table(title='赞助者',show_header=False)
+        sponsor_list = get_sponsor_list()
+        for sponsor in sponsor_list:
+            table.add_row(f'[bold green]{sponsor}[/bold green]')
+        table.add_section()
+        table.add_row('[bold blue]感谢以上人员对本项目的支持！[/bold blue]')
+        console.print(table)
+        
     async def autorun(self):
         server = await self.Workspace.getFromName(self.config.autorun)
         console.print(f'[bold blue]将于三秒后启动 {server.name}。键入Ctrl+C(^C)可取消.')
