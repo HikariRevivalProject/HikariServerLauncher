@@ -24,3 +24,5 @@ hsl-config.json
 *.dist/
 nuitka-crash-report.xml
 *.bin
+TODO
+Dockerfile

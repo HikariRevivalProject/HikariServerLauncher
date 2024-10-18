@@ -1,8 +1,10 @@
 import json
 import logging
 import os
+from rich.console import Console
 logger = logging.getLogger('hsl')
 CONFIG_FILE = 'hsl-config.json'
+console = Console()
 class Config():
     def __init__(self):
         self.first_run: bool = True
@@ -12,6 +14,7 @@ class Config():
         self.backup_dir: str = 'backup'
         self.autorun: str = ''
         self.debug: bool = False
+        self.language: str = 'en'
     def load(self):
         try:
             with open(CONFIG_FILE, 'r') as f:
@@ -21,12 +24,12 @@ class Config():
             pass
         except KeyError:
             os.remove(CONFIG_FILE)
-            logger.error('Invalid config file, removed and created a new one')
+            console.log('Invalid config file, removed and created a new one')
             self.save()
         except json.JSONDecodeError:
-            logger.error('Invalid config file')
+            console.log('Invalid config file')
         return self
     def save(self):
         with open(CONFIG_FILE, 'w') as f:
             json.dump(self.__dict__, f, indent=4)
-            logger.info(f'Config saved to {CONFIG_FILE} with data {self.__dict__}')
+            console.log(f'Config saved to {CONFIG_FILE} with data {self.__dict__}')

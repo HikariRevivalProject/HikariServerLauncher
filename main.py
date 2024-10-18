@@ -4,9 +4,11 @@ import sys
 import yaml
 import asyncio
 import noneprompt
+
+from hsl.core import backup
 try:
     import winreg as reg
-except:
+except Exception:
     pass
 import webbrowser
 import javaproperties
@@ -14,24 +16,42 @@ from hsl.utils import osfunc
 from hsl.core.server import Server
 from hsl.core.java import Java
 from hsl.core.checks import check_update
-from typing import Callable
+from typing import Any, Callable, Optional
 from rich.table import Table
 from hsl.core.workspace import Workspace
 from hsl.core.main import HSL
+from hsl.core.locale import Locale
 from hsl.core.backup import Backup
 from hsl.core.sponsor import get_sponsor_list
 from rich.console import Console
 from hsl.gametypes import fabric, forge, paper, vanilla
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
+locale = Locale()
+console = Console()
 HELP_URL = r'https://docs.qq.com/doc/DY3pnS1hFVm1uYWlp'
-OPTIONS_ADVANCED = ['取消']
-OPTIONS_SETTINGS = ['调试模式', '镜像源优先', '开机自启', '取消']
-OPTIONS_GAMETYPE = ['原版','Paper','Forge','Fabric','取消']
-OPTIONS_BACKUPS = ['备份服务器', '还原服务器', '删除备份', '取消']
-OPTIONS_MENU = ['创建服务器', '管理服务器', '删除服务器', '备份中心', '设置', '高级选项','赞助者名单', '退出']
-OPTIONS_MANAGE = ['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '取消']
-OPTIONS_JAVA = ['Java 6', 'Java 8', 'Java 11', 'Java 16', 'Java 17','Java 21', '取消']
-OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
+QQGROUP_URL = r'https://qm.qq.com/q/bUTqWXnwje'
+def constants_init() -> None:
+    global OPTIONS_MENU, OPTIONS_MANAGE, OPTIONS_BACKUPS, OPTIONS_SETTINGS, OPTIONS_ADVANCED, OPTIONS_GAMETYPE, OPTIONS_JAVA, OPTIONS_JAVA_VERSION
+    OPTIONS_ADVANCED = locale.trans_key(['cancel'])
+    OPTIONS_SETTINGS = locale.trans_key(
+        ['set-language', 'debug', 'mirror-first', 'run-on-system-startup', 'cancel']
+    )
+    OPTIONS_GAMETYPE = locale.trans_key(
+        ['vanilla', 'paper', 'forge', 'fabric', 'cancel']
+    )
+    OPTIONS_BACKUPS = locale.trans_key(
+        ['backup-server', 'restore-server', 'delete-backup', 'cancel']
+    )
+    OPTIONS_MENU = locale.trans_key(
+        ['create-server', 'manage-server', 'delete-server', 'backup-center', 'settings', 'advanced-options', 'sponsor-list', 'exit']
+    )
+    OPTIONS_MANAGE = locale.trans_key(['start-server','open-server-folder','specific-configs','command-execute-before-server-start','custom-jvm-args','set-to-auto-run','export-start-script','edit-java-version','edit-max-ram'])#['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '取消']
+    OPTIONS_JAVA = locale.trans_key(
+        ['java-6', 'java-8', 'java-11', 'java-17', 'java-21', 'cancel']
+    )
+    OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
+OPTIONS_LANGUAGE = ["简体中文", "English"]
+OPTIONS_LANGUAGE_CODE = ["zh", "en"]
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
@@ -40,36 +60,34 @@ try:
     AUTORUN_REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 except NameError:
     pass
-console = Console()
-
 class HSL_MAIN(HSL):
     def __init__(self):
         super().__init__()
         self.Workspace = Workspace()
         self.Java = Java()
         self.Backup = Backup()
+        constants_init()
     async def welcome(self) -> None:
         """
             Welcome
         """
         try:
+            webbrowser.open(QQGROUP_URL, new=1)
             webbrowser.open(HELP_URL, new=1)
         except webbrowser.Error:
-            console.print(f'[bold magenta]无法打开帮助文档。请自行查阅{HELP_URL}')
-        console.rule('配置设置')
-        console.print('如果你的服务器环境在国内, 推荐使用镜像源源以获得更好的速度。\n是否使用镜像源优先? (默认: 否)\n')
-        self.config.use_mirror = await promptConfirm('是否使用镜像源优先?')
+            console.print(locale.trans_key('cannot-open-web-browser', help = HELP_URL, qqgroup = QQGROUP_URL))
+        await self.set_language()
+        console.rule(locale.trans_key('customize-on-first-run'))
+        console.print(locale.trans_key('set-mirror-priority-suggest-text'))
+        self.config.use_mirror = await promptConfirm(locale.trans_key('set-mirror-priority-prompt-select'))
         self.config.first_run = False
         self.config.save()
-        console.print('设置已应用。')
-        console.rule('配置完成')
+        console.print(locale.trans_key('settings-applied'))
+        console.rule(locale.trans_key('finished-customizing'))
         return
     async def exit(self) -> None:
         sys.exit(0)
     async def do_nothing(self) -> None:
-        """
-            Do nothing
-        """
         pass
     async def create(self) -> None:
         """
@@ -77,14 +95,14 @@ class HSL_MAIN(HSL):
         """
         serverName = await self.get_valid_server_name()
         if not serverName:
-            console.print('[bold magenta]服务器已存在。')
+            console.print(locale.trans_key('server-exist'))
             return
 
-        console.print('服务器不存在，进入安装阶段。')
+        console.print(locale.trans_key('no-such-server'))
         serverPath = await self.Workspace.create(server_name=serverName)
         server_setting = await self.install(serverName=serverName, serverPath=serverPath)
         if not server_setting:
-            console.print('[bold magenta]未安装服务器。')
+            console.print(locale.trans_key('install-server-failed'))
             return
 
         serverName, serverType, serverPath, javaversion, data = server_setting # type: ignore
@@ -92,53 +110,37 @@ class HSL_MAIN(HSL):
         await self.Workspace.add(
             Server(name=serverName, type=serverType, path=serverPath, javaversion=javaversion, maxRam=maxRam, data=data)
         )
-        console.print(f'[bold green]服务器 {serverName} 安装成功。')
+        console.print(locale.trans_key('server-install-success', serverName = serverName))
 
-    async def get_valid_server_name(self) -> str | None:
+    async def get_valid_server_name(self) -> Optional[str]:
         """
             Get valid server name
             Return: str | None
         """
-        serverName = await promptInput('请输入服务器名称:')
+        serverName = await promptInput(locale.trans_key('server-name-input'))
         while (not serverName.strip()) or (serverName in ['con','aux','nul','prn'] and os.name == 'nt'):
-            serverName = await promptInput('名称非法，请重新输入:')
+            serverName = await promptInput(locale.trans_key('illegal-name-input'))
 
         servers = self.Workspace.workspaces
         return None if any(s['name'] == serverName for s in servers) else serverName
     
     async def get_valid_max_ram(self) -> str:
-        """
-            Get valid max ram
-            Return: str | None
-        """
-        maxRam = await promptInput(f'你的主机最大内存为：{OS_MAXRAM}MB 请输入服务器最大内存(示例：1024M 或 1G):')
+        maxRam = await promptInput(locale.trans_key('maximum-memory-prompt-input',OS_MAXRAM = str(OS_MAXRAM)))
         while not MAXRAM_PATTERN.match(maxRam):
-            maxRam = await promptInput('输入错误，请重新输入:')
+            maxRam = await promptInput(locale.trans_key('maximum-memory-input-illegal'))
         return maxRam
 
-    async def install(self, *, serverName: str, serverPath: str) -> tuple | bool:
-        """
-            Install the server
-            Args: 
-                serverName: str
-                serverPath: str
-        
-            Returns: 
-                serverName, 
-                serverPath, 
-                serverJarPath, 
-                data
-        """
+    async def install(self, *, serverName: str, serverPath: str) -> tuple[str, str, str, str, dict] | bool:
         if self.config.use_mirror:
-            console.print('[bold red]镜像源优先设置已启用，部分下载将优先使用镜像源。若无法正常下载，请尝试切换至官方源。')
+            console.print(locale.trans_key("mirror-first-enabled-prompt-text"))
         serverJarPath = os.path.join(serverPath, 'server.jar')
         
-        gameType = await promptSelect(OPTIONS_GAMETYPE, '请选择服务器类型:')
+        gameType = await promptSelect(OPTIONS_GAMETYPE, locale.trans_key("server-type-prompt-select"))
         if gameType == 0:
             return await vanilla.install(self, serverName, serverPath, serverJarPath, {})
         elif gameType == 1:
             data = {
-                'experimental': await promptConfirm('是否下载实验性构建版本?')
+                'experimental': await promptConfirm(locale.trans_key('paper-experimental-prompt-select'))
             }
             return await paper.install(self, serverName, serverPath, serverJarPath, data)
         elif gameType == 2:
@@ -159,14 +161,14 @@ class HSL_MAIN(HSL):
         # return await install_methods[gameType](self, serverName, serverPath, serverJarPath, data)
     async def manage(self) -> None:
         if not self.Workspace.workspaces:
-            console.print('[bold magenta]没有可用的服务器。')
+            console.print(locale.trans_key('no-server-available'))
             await asyncio.sleep(1)
             return
         
-        console.rule('服务器管理')
-        index = await promptSelect([x['name'] for x in self.Workspace.workspaces], '选择服务器:')
+        console.rule(locale.trans_key('server-management'))
+        index = await promptSelect([x['name'] for x in self.Workspace.workspaces], locale.trans_key('select-server'))
         server = await self.Workspace.get(index)
-        _index = await promptSelect(OPTIONS_MANAGE, f'{server.name} - 请选择操作:')
+        _index = await promptSelect(OPTIONS_MANAGE, locale.trans_key('server-manage-prompt-select', servername = server.name))
         
         manage_methods: dict[int, Callable] = {
             0: lambda: server.run(self.Workspace.dir),
@@ -185,57 +187,52 @@ class HSL_MAIN(HSL):
     async def change_max_ram(self, index: int) -> None:
         maxRam = await self.get_valid_max_ram()
         await self.Workspace.modify(index,'maxRam', maxRam)
-        console.print('[bold green]最大内存设置成功。')
+        console.print(locale.trans_key('maximum-memory-setting-success'))
     async def change_java_version(self, index: int):
-        console.print('[bold red]注意：服务器将自动使用推荐的Java版本，随意修改可能会导致服务器无法启动。')
-        _index_java = await promptSelect(OPTIONS_JAVA, '请选择Java版本:')
+        console.print(locale.trans_key('prompt-select-java-automatically'))
+        _index_java = await promptSelect(OPTIONS_JAVA, locale.trans_key('java-select'))
         if _index_java == len(OPTIONS_JAVA)-1:
             return
         await self.Workspace.modify(index, 'javaversion', OPTIONS_JAVA_VERSION[_index_java])
-        console.print('[bold green]Java版本设置成功。')
+        console.print(locale.trans_key('java-select-success'))
         return
     async def open_server_directory(self, server: Server) -> None:
         try:
             os.startfile(server.path) # type: ignore
         except Exception:
-            console.print('[bold magenta]无法打开服务器目录。')
+            console.print(locale.trans_key('cannot-open-server-directory'))
 
     async def set_startup_command(self, index: int) -> None:
-        cmd = await promptInput('请输入命令，将在服务器启动前在服务器目录执行:')
+        cmd = await promptInput(locale.trans_key('command-execute-before-server-start-prompt-input'))
         await self.Workspace.modifyData(index, 'startup_cmd', cmd)
-        console.print('[bold green]命令设置成功。')
+        console.print(locale.trans_key('startup-cmd-set'))
 
     async def set_jvm_settings(self, index: int) -> None:
-        console.print('[white bold]请输入JVM参数（包含横杠，例如-Xms1G，可多个），将在服务器启动时添加至启动参数内\n默认已设置-Dfile.encoding=utf-8以及-Xmx')
-        jvm_setting = await promptInput('此为高级设置，若您不了解请勿随意填写:')
+        console.print(locale.trans_key('jvm-setting'))
+        jvm_setting = await promptInput(locale.trans_key('jvm-setting-prompt'))
         await self.Workspace.modifyData(index, 'jvm_setting', jvm_setting)
-        console.print('[bold green]JVM参数设置成功。')
+        console.print(locale.trans_key('jvm-setting-success'))
 
     async def set_autorun(self, server: Server) -> None:
-        if not await promptConfirm(f'确定要将 {server.name} 设为自动启动吗？'): return
+        if not await promptConfirm(locale.trans_key('set-to-auto-run-ask', servername = server.name)): return
         self.config.autorun = server.name
         self.config.save()
-        console.print('[bold green]自动启动设置成功，将在下次运行此软件时自动打开该服务器。')
+        console.print(locale.trans_key('set-to-auto-run-2'))
 
     async def export_start_script(self, server: Server) -> None:
         script_name = f'{server.name}.run.bat' if os.name == 'nt' else f'{server.name}.run.sh'
         with open(script_name, 'w') as f:
             f.write(await server.gen_run_command(self.Workspace.dir, export=True))
-        console.print(f'[green]生成启动脚本成功({script_name})')
+        console.print(locale.trans_key('exported-start-script', script_name = script_name))
         await asyncio.sleep(3)
 
     async def editConfig(self, server: Server) -> None:
-        console.print('[blue bold]读取特定配置索引:')
         configs = self.spconfigs
-        if not configs:
-            console.print('[bold magenta]特定配置索引读取失败，请检查网络连接。')
-            return
         
         editableConfigs = await self.get_editable_configs(configs, server)
         if not editableConfigs:
-            console.print('[bold magenta]没有可编辑的配置文件。')
+            console.print(locale.trans_key('no-specific-config-available'))
             return
-        
         await self.edit_selected_configs(editableConfigs, server)
         return
     async def get_editable_configs(self, configs, server: Server) -> list:
@@ -248,7 +245,6 @@ class HSL_MAIN(HSL):
             
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = self.load_config_file(config_info, f)
-            console.print(f'Loaded conig file{config_info["name"]}.')
             if any(self.get_nested_value(config, key_info['key'].split('.')) is not None for key_info in config_info['keys']):
                 editableConfigs.append((config_info,config))
         return editableConfigs
@@ -260,7 +256,7 @@ class HSL_MAIN(HSL):
             return yaml.safe_load(f)
         return {}
 
-    def get_nested_value(self, config: dict, keys: list) -> dict | None:
+    def get_nested_value(self, config: dict, keys: list) -> Any:
         for key in keys:
             config = config.get(key, None)
             if config is None:
@@ -274,8 +270,8 @@ class HSL_MAIN(HSL):
     async def edit_selected_configs(self, editableConfigs, server) -> None:
         while True:
             selected_index = await promptSelect(
-                [f"{x[0]['name']} - {x[0]['description']}" for x in editableConfigs] + ['返回'], 
-                '请选择要修改的配置文件:'
+                [f"{x[0]['name']} - {x[0]['description']}" for x in editableConfigs] + locale.trans_key(['return']), 
+                locale.trans_key('specific-config-file-edit-select')
             )
             if selected_index == len(editableConfigs):
                 break
@@ -288,8 +284,8 @@ class HSL_MAIN(HSL):
         editableKeys = [(key_info['key'], f"{key_info['name']} - {key_info['description']}") for key_info in editConfig['keys']]
         while True:
             editKeyIndex = await promptSelect(
-                [x[1] for x in editableKeys] + ['返回'], 
-                '请选择要修改的配置项:'
+                [x[1] for x in editableKeys] + locale.trans_key(['return']), 
+                locale.trans_key('specific-config-edit-select')
             )
             if editKeyIndex == len(editableKeys):
                 break
@@ -297,10 +293,12 @@ class HSL_MAIN(HSL):
             key, _ = editableKeys[editKeyIndex]
             key_info: dict  = editConfig['keys'][editKeyIndex]
             value = self.get_nested_value(config, key.split('.'))
-            console.print(f'[bold green]{key_info["name"]} - 当前值: {value}')
+            if not value:
+                return
+            console.print(locale.trans_key('specific-config-current-value',name=key_info['name'], value = value))
             console.print(f'[bold white]Tips: {key_info["tips"]}')
             if key_info.get('danger', False):
-                console.print('[bold red]这是一个危险配置！修改前请三思！')
+                console.print(locale.trans_key('danger-config-warn'))
             editValue = await self.input_new_value(editConfig, key_info)
             self.set_nested_value(config, key.split('.'), editValue)
             self.save_config_file(editConfig, config, server.path)
@@ -308,17 +306,17 @@ class HSL_MAIN(HSL):
 
     async def input_new_value(self, editConfig, key_info) -> str | int | bool | None:
         if key_info['type'] == "int":
-            key = await promptInput('请输入新值(整数):')
+            key = await promptInput(locale.trans_key('enter-new-value-int'))
             return key if editConfig['type'] == 'properties' else int(key)
         elif key_info['type'] == "str":
-            return await promptInput('请输入新值(字符串):')
+            return await promptInput(locale.trans_key('enter-new-value-str'))
 
         elif key_info['type'] == "bool":
             if editConfig['type'] == 'properties':
-                return 'true' if await promptConfirm('请选择新值:') else 'false'
-            return await promptConfirm('请选择新值:')
+                return 'true' if await promptConfirm(locale.trans_key('enter-new-value-bool')) else 'false'
+            return await promptConfirm(locale.trans_key('enter-new-value-bool'))
         elif key_info['type'] == "choice":
-            choice_index = await promptSelect(key_info['choices'], '请选择新值:')
+            choice_index = await promptSelect(key_info['choices'], locale.trans_key('enter-new-value-select'))
             return key_info['choices'][choice_index]
         return None
 
@@ -337,57 +335,65 @@ class HSL_MAIN(HSL):
         except Exception:
             return False
     async def delete(self) -> None:
-        console.rule('服务器删除')
+        console.rule(locale.trans_key('delete-server'))
         if not self.Workspace.workspaces:
-            console.print('没有服务器。')
+            console.print(locale.trans_key('no-such-server'))
             return
         
-        index = await promptSelect([x['name'] for x in self.Workspace.workspaces], '请选择要删除的服务器:')
-        if await promptConfirm('确定要删除吗?'):
+        index = await promptSelect([x['name'] for x in self.Workspace.workspaces], locale.trans_key('delete-server-prompt-select'))
+        if await promptConfirm(locale.trans_key('delete-server-prompt-confirm')):
             await self.Workspace.delete(index)
         return
 
     async def setting(self):
-        console.rule('设置')
-        index = await promptSelect(OPTIONS_SETTINGS, '设置：')
+        console.rule(locale.trans_key('settings'))
+        index = await promptSelect(OPTIONS_SETTINGS, locale.trans_key('settings'))
         
         settings_methods = {
-            0: lambda: self.set_debug_mode(),
-            1: lambda: self.set_mirror_priority(),
-            2: lambda: self.set_run_on_startup(),
+            0: lambda: self.set_language(),
+            1: lambda: self.set_debug_mode(),
+            2: lambda: self.set_mirror_priority(),
+            3: lambda: self.set_run_on_startup(),
             len(OPTIONS_SETTINGS) - 1: lambda: self.do_nothing()
         }
         await settings_methods[index]()
         self.config.save()
+    async def set_language(self):
+        lang = await promptSelect(OPTIONS_LANGUAGE, locale.trans_key('select-language'))
+        locale.set_language(OPTIONS_LANGUAGE_CODE[lang])
+        constants_init()
+        self.config.language = OPTIONS_LANGUAGE_CODE[lang]
+        self.config.save()
+        console.print(locale.trans_key('language-changed'))
     async def set_run_on_startup(self):
         if os.name == 'nt':
             #new feature: add to registry
-            reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE)
-            query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE)
+            reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_SET_VALUE) # type: ignore
+            query_reg_key = reg.OpenKey(AUTORUN_REG_HKEY, AUTORUN_REG_PATH, 0, reg.KEY_QUERY_VALUE) # type: ignore
             #check if HSL is already in the registry
             try:
-                reg.QueryValueEx(query_reg_key, HSL_NAME)
-                console.print('[bold green]Hikari Server Launcher 已在开机自启，无需重复设置。')
-                if await promptConfirm('是否移除开机自启设置？'):
-                    reg.DeleteValue(reg_key, HSL_NAME)
+                reg.QueryValueEx(query_reg_key, HSL_NAME) # type: ignore
+                console.print(locale.trans_key('already-in-autorun-registry'))
+                if await promptConfirm(locale.trans_key('autorun-registry-remove-prompt-confirm')):
+                    reg.DeleteValue(reg_key, HSL_NAME) # type: ignore
                 return
             except FileNotFoundError:
                 pass
             if not await promptConfirm(
-                '是否要将 Hikari Server Launcher 设为开机自启？'
+                locale.trans_key('autorun-registry-add-prompt-confirm')
             ):
                 return
             exec_path = os.path.abspath(sys.argv[0])
-            reg.SetValueEx(reg_key, HSL_NAME, 0, reg.REG_SZ, exec_path)
+            reg.SetValueEx(reg_key, HSL_NAME, 0, reg.REG_SZ, exec_path) # type: ignore
         else:
-            console.print('[bold magenta]当前系统不支持开机自启。')
+            console.print(locale.trans_key('autorun-not-supported-os'))
             return
     async def set_debug_mode(self):
-        self.config.debug = await promptConfirm('开启调试模式？')
+        self.config.debug = await promptConfirm(locale.trans_key('debug-mode-prompt-select'))
     async def set_mirror_priority(self):
-        self.config.use_mirror = await promptConfirm('是否使用镜像源优先？')
+        self.config.use_mirror = await promptConfirm(locale.trans_key('set-mirror-priority-prompt-select'))
     async def advanced_options(self):
-        index = await promptSelect(OPTIONS_ADVANCED, '高级选项：')
+        index = await promptSelect(OPTIONS_ADVANCED, locale.trans_key('advanced-settings'))
         
         advanced_methods = {
             len(OPTIONS_ADVANCED) - 1: lambda: self.do_nothing()
@@ -396,13 +402,15 @@ class HSL_MAIN(HSL):
     
     async def mainMenu(self):
         while True:
-            console.rule(f'{HSL_NAME} [bold blue]v{str(self.version/10)}' + (' [white]- [bold red]Debug Mode' if self.config.debug else ''))
-            console.set_window_title(f'{HSL_NAME} v{str(self.version/10)}' + (' [white]- [bold red]Debug Mode' if self.config.debug else ''))
-            console.print(f'[bold blue]你正在运行{HSL_NAME} 版本号：[u]{self.version/10}[/u]，次要版本：[u]{self.minor_version}[/u]')
+            title = locale.trans_key('title', version = str(self.version/10)) + (locale.trans_key('title-debug') if self.config.debug else '')
+            console.rule(title)
+            console.set_window_title(title)
+            console.print(locale.trans_key('version', HSL_NAME = HSL_NAME, version = str(self.version/10), minor_version = str(self.minor_version)))
             try:
-                index = await promptSelect(OPTIONS_MENU, '菜单：')
+                index = await promptSelect(OPTIONS_MENU, locale.trans_key('menu'))
             except (KeyboardInterrupt, asyncio.CancelledError):
                 pass
+            index = 7
             
             menu_methods: dict[int, Callable] = {
                 0: lambda: self.create(),
@@ -416,67 +424,67 @@ class HSL_MAIN(HSL):
             }
             await menu_methods[index]()
     async def get_sponsor_list(self):
-        table = Table(title='赞助者',show_header=False)
+        table = Table(title=locale.trans_key('sponsor'),show_header=False)
         sponsor_list = get_sponsor_list()
         for sponsor in sponsor_list:
             table.add_row(f'[bold green]{sponsor}[/bold green]')
         table.add_section()
-        table.add_row('[bold blue]感谢以上人员对本项目的支持！[/bold blue]')
+        table.add_row(locale.trans_key('sponsor-thanks'))
         console.print(table)
         
     async def autorun(self):
         server = await self.Workspace.getFromName(self.config.autorun)
-        console.print(f'[bold blue]将于三秒后启动 {server.name}。键入Ctrl+C(^C)可取消.')
+        console.print(locale.trans_key('server-auto-run-prompt',servername=server.name))
         await asyncio.sleep(3)
         await server.run(self.Workspace.dir)
         exit()
     async def backups(self):
-        console.rule('备份管理')
+        console.rule(locale.trans_key('backup-management'))
         backup_methods: dict[int, Callable] = {
             0: lambda: self.create_backup(),
             1: lambda: self.restore_backup(),
             2: lambda: self.delete_backup(),
             len(OPTIONS_BACKUPS) - 1: lambda: self.do_nothing()
         }
-        index = await promptSelect(OPTIONS_BACKUPS, '备份管理：')
+        index = await promptSelect(OPTIONS_BACKUPS, locale.trans_key('backup-management'))
         await backup_methods[index]()
     async def create_backup(self):
         servers = await self.Workspace.getAll()
-        server_index = await promptSelect([x.name for x in servers], '请选择要备份的服务器:')
+        server_index = await promptSelect([x.name for x in servers], locale.trans_key('backup-server-prompt-select'))
         server = servers[server_index]
-        with console.status(f'正在备份 {server.name}...'):
+        with console.status(locale.trans_key('backup-creating', servername=server.name)):
             backup_file = await self.Backup.backup_server(server)
-        print(f"{server.name} 的备份已保存至 {backup_file}")
+        print(locale.trans_key('backup-create-success', servername=server.name, backupname=backup_file))
         return True
     async def restore_backup(self):
         servers = await self.Workspace.getAll()
-        server_index = await promptSelect([x.name for x in servers], '请选择要恢复备份的服务器:')
+        server_index = await promptSelect([x.name for x in servers], locale.trans_key('backup-restore-server-prompt-select'))
         server = servers[server_index]
 
         backups = await self.Backup.get_backup_list()
         if not backups:
-            console.print('[bold magenta]没有可用的备份。')
+            console.print(locale.trans_key('no-backup-available'))
             return
-        backup_index = await promptSelect(list(backups), '请选择要恢复的备份:')
+        backup_index = await promptSelect(list(backups), locale.trans_key('backup-restore-select'))
         backup_file = backups[backup_index]
-        with console.status(f'正在恢复 {server.name}...'):
+        with console.status(locale.trans_key('backup-restoring',backupname = backup_file)):
             await self.Backup.restore_backup(server, backup_file)
-        console.print(f"{server.name} 的备份已恢复。")
+        console.print(locale.trans_key('backup-restore-success', servername=server.name, backupname=backup_file))
         return True
     async def delete_backup(self):
         backups = await self.Backup.get_backup_list()
         if not backups:
-            console.print('[bold magenta]没有可用的备份。')
+            console.print(locale.trans_key('no-backup-available'))
             return
-        backup_index = await promptSelect(list(backups), '请选择要删除的备份:')
+        backup_index = await promptSelect(list(backups), locale.trans_key('delete-backup-prompt-select'))
         backup_file = backups[backup_index]
-        if await promptConfirm(f'确定要删除 {backup_file} 吗?'):
+        if await promptConfirm(locale.trans_key('delete-backup-prompt-confirm', backupname=backup_file)):
             await self.Backup.delete_backup(backup_file)
         return True
 
 mainProgram = HSL_MAIN()
 async def main():
-    cutask = asyncio.create_task(check_update())
+    task = asyncio.create_task(check_update())
     # isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
     if mainProgram.config.first_run:
         await mainProgram.welcome()
@@ -489,11 +497,10 @@ async def main():
         except (KeyboardInterrupt, asyncio.CancelledError):
             mainProgram.config.autorun = ''
             mainProgram.config.save()
-            console.print('自动启动已取消并重置，如需再次启用请重新设置。')
-            await asyncio.sleep(1)
-
+            console.print(locale.trans_key('autorun-canceled'))
     await mainProgram.mainMenu()
-    await cutask
+    await task
+    
 
 if __name__ == '__main__':
     try:
@@ -501,8 +508,8 @@ if __name__ == '__main__':
     except SystemExit:
         pass
     except noneprompt.CancelledError:
-        console.print('[bold green]用户取消操作，已退出。')
+        console.print(locale.trans_key('user-cancel-operate'))
     except Exception as e:
-        console.print(f'[bold red]发生未知错误: {e}')
+        console.print(locale.trans_key('unknown-error-occur',e = str(e)))
         if mainProgram.config.debug:
             console.print_exception()

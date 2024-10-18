@@ -8,11 +8,24 @@ on:
     branches: 
       - main
 jobs:
+  tag_version:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Bump version and push tag
+        id: tag
+        uses: anothrNick/github-tag-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: "v${{ vars.VERSION }}"
+    outputs:
+      new_tag: ${{ steps.tag.outputs.new_tag }}
   build:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-latest]
-
+    needs: tag_version
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -46,6 +59,7 @@ jobs:
       - name: Build executable(Linux)
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         uses: Nuitka/Nuitka-Action@main
+        
         with:
           nuitka-version: main
           script-name: main.py
@@ -59,30 +73,64 @@ jobs:
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
           copyright: "Copyright 2024 Hikari"
+          include-data-files: lang/*.json=lang/
       - name: Upload executable
         uses: actions/upload-artifact@v3
         with:
+          name: ${{ runner.os}} Build
           path: |
             build/*.exe
             build/*.bin
-            build/*.app/**/*
-      - name: Bump version and push tag
-        id: tag_version
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
-        uses: anothrNick/github-tag-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CUSTOM_TAG: "v${{ vars.VERSION }}"
+  create_release:
+    needs: ['build', 'tag_version']
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download executable
+        uses: actions/download-artifact@v3
       - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          files: |
-            build/*.exe
-            build/*.bin
-            build/*.app/**/*
-          body: |
-            Release ${{ vars.VERSION }}
-            Automatically generated release from tag ${{ steps.tag_version.outputs.new_tag }}
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.tag_version.outputs.new_tag }}
+          release_name: Release ${{ needs.tag_version.outputs.new_tag }}
+          body: |
+            HikariServerLauncher Release ${{ needs.tag_version.outputs.new_tag }}
+            Release automatically by Github Actions
+          draft: false
+          prerelease: false
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+  upload_release_asset:
+    needs: ['tag_version', 'create_release']
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Download executable
+        uses: actions/download-artifact@v3
+      - name: Upload Release Asset(Linux)
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        id: upload_release_asset_linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_content_type: application/octet-stream
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: build/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
+          asset_name: HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
+      - name: Upload Release Asset(Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        id: upload_release_asset_win
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_content_type: application/octet-stream
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: build/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.exe
+          asset_name: HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.exe
+        

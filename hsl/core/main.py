@@ -1,4 +1,5 @@
 from hsl.core.config import Config
+from hsl.core.locale import Locale
 from hsl.core.checks import get_version
 from hsl.source.source import get_source
 from hsl.spconfigs.spconfigs import get_spconfigs
@@ -6,7 +7,7 @@ from rich.console import Console
 import sys
 import platform
 console = Console()
-
+locale = Locale()
 OS_ARCH = platform.machine()
 console.log(f'OS_ARCH: {OS_ARCH}')
 if OS_ARCH not in ['AMD64', 'x86_64']:
