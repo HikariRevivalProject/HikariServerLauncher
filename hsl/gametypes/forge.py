@@ -1,3 +1,4 @@
+from typing import Any
 import requests
 import re
 import os
@@ -78,7 +79,8 @@ async def download_installer(source: Source,mcVersion: str,version: str,path: st
             return await downloadfile(url, path)
     return False
 async def run_install(javaPath: str,path: str):
-    cmd = f'{javaPath} -jar forge-installer.jar --installServer'
+    linux_prefix = './' if os.name == 'posix' else ''
+    cmd = f'{linux_prefix}{javaPath} -jar forge-installer.jar --installServer'
     console.log(f'Run Forge Install Args: {cmd}')
     with console.status('Forge 安装中，请稍作等待...', spinner='bouncingBar'):
         Process = subprocess.Popen(args=cmd.split(" "),stdout=subprocess.PIPE,cwd=path)
@@ -86,7 +88,7 @@ async def run_install(javaPath: str,path: str):
             for line in iter(Process.stdout.readline, b''): # type: ignore
                 console.print(line.decode('utf-8').strip())
     return True
-async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: dict):
+async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: dict) -> Any:
         serverType = 'forge'
         mcVersions = await vanilla.get_versions(self.source)
         _mcVersions = await get_mcversions(self.source, self.config.use_mirror)

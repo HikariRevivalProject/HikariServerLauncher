@@ -1,6 +1,8 @@
 {
     "title": "HikariServerLauncher [bold blue]v{version} ",
     "title-debug": "[white]- [bold red]调试模式",
+    "window-title": "HikariServerLauncher v{version} ",
+    "window-title-debug": "- 调试模式",
     "version": "[bold blue]你正在运行{HSL_NAME} 版本号：[u]{version}[/u]，次要版本：[u]{minor_version}[/u]",
     "set-language": "设置语言",
     "select-language": "选择语言：",

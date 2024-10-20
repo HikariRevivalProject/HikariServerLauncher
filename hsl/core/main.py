@@ -28,6 +28,7 @@ class HSL:
         self.config = Config().load()
         self.source = SOURCE
         self.spconfigs = SPCONFIGS
+        self.locale = Locale()
         if not self.source or not self.spconfigs:
             console.print('加载源数据失败，请检查网络连接.')
             sys.exit(1)

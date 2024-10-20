@@ -13,7 +13,7 @@ class Backup():
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir)
         backup_file = os.path.join(backup_dir, server.name + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".zip")
-        with zipfile.ZipFile(backup_file, "w") as zip_file:
+        with zipfile.ZipFile(backup_file, "w",compresslevel=9,compression=zipfile.ZIP_DEFLATED) as zip_file:
             for root, dirs, files in os.walk(server.path):
                 for file in files:
                     file_path = os.path.join(root, file)

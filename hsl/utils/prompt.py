@@ -5,11 +5,11 @@ locale = Locale()
 OPTIONS_YN = locale.trans_key(['yes','no'])
 async def promptSelect(options: list,prompt: str) -> int:
     choices = [Choice(options[i],data=i) for i in range(len(options))]
-    prompt_task = asyncio.create_task(ListPrompt(prompt, choices=choices,annotation=locale.trans_key('choice-prompt-annotation')).prompt_async())
+    prompt_task = asyncio.create_task(ListPrompt(prompt, question_mark='[HSL]', pointer='>', choices=choices,annotation=locale.trans_key('choice-prompt-annotation')).prompt_async())
     select = await asyncio.gather(prompt_task)
     return select[0].data
 async def promptInput(prompt: str) -> str:
-    prompt_task = asyncio.create_task(InputPrompt(prompt, validator=lambda string: True).prompt_async())
+    prompt_task = asyncio.create_task(InputPrompt(prompt, question_mark='[HSL]').prompt_async())
     _input = await asyncio.gather(prompt_task)
     return _input[0]
 async def promptConfirm(prompt: str) -> bool:

@@ -1,6 +1,6 @@
 SPONSOR = [
     "Hikari<contact@hikari.bond>",
-    "awatsuki",
+    "awaTsuki",
     "BenXong",
     "Graphite_sm"
 ]

@@ -21,9 +21,9 @@ async def recursive_chmod(directory, mode):
 
     for root, dirs, files in os.walk(directory):
         for d in dirs:
-            os.chmod(os.path.join(root, d), mode)
+            os.chmod(os.path.join(root, d), mode, follow_symlinks=True)
         for f in files:
-            os.chmod(os.path.join(root, f), mode)
+            os.chmod(os.path.join(root, f), mode, follow_symlinks=True)
 
 class Java(HSL):
 
@@ -96,12 +96,14 @@ class Java(HSL):
             elif os.name == 'posix':
                 url = i.linux[javaVersion]
             if await downloadfile(url,filename):
-                console.print(f'[green] 下载Java成功，正在解压...')
+                console.print('[green]下载Java成功，正在解压...')
                 with zipfile.ZipFile(filename,'r') as file:
                     file.extractall(path)
                 #change permission for linux
+                console.print('[green]修改文件权限...')
                 await recursive_chmod(path, 0o755)
                 os.remove(filename)
+                console.print('[green]Java设置完成。')
                 return True
         return False
         

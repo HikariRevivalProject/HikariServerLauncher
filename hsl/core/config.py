@@ -14,7 +14,7 @@ class Config():
         self.backup_dir: str = 'backup'
         self.autorun: str = ''
         self.debug: bool = False
-        self.language: str = 'en'
+        self.language: str = 'zh'
     def load(self):
         try:
             with open(CONFIG_FILE, 'r') as f:
@@ -32,4 +32,4 @@ class Config():
     def save(self):
         with open(CONFIG_FILE, 'w') as f:
             json.dump(self.__dict__, f, indent=4)
-            console.log(f'Config saved to {CONFIG_FILE} with data {self.__dict__}')
+            #console.log(f'Config saved to {CONFIG_FILE} with data {self.__dict__}')

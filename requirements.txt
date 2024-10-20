@@ -1,13 +1,11 @@
-tqdm
 rich
 httpx
 regex
 psutil
 pyyaml
-aiohttp
+nuitka
 requests
 noneprompt
 aioconsole
-pyinstaller
 javaproperties
 pydantic==1.10.18

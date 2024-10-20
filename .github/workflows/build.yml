@@ -56,6 +56,7 @@ jobs:
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
           copyright: "Copyright 2024 Hikari"
+          include-data-files: lang/*.json=lang/
       - name: Build executable(Linux)
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         uses: Nuitka/Nuitka-Action@main

@@ -1,5 +1,6 @@
 # HSL Locale Module
 from typing import Any, Union
+import nuitka
 from hsl.core.exceptions import LanguageNotSupportedException
 import os
 import sys
@@ -16,11 +17,13 @@ class Locale():
         self.set_language(self.language)
     def set_language(self, language: str) -> None:
         self.language = language
-        self.packaged = bool(getattr(sys, '_MEIPASS', False))
-        base_path = sys._MEIPASS if self.packaged else os.path.abspath(".") # type: ignore
+        if hasattr(nuitka, '__compiled__'):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.abspath(".")
         file_path = os.path.join(base_path, 'lang', f'{self.language}.json')
-        if self.debug:
-            console.log(f'Loading language file {file_path}')
+        #if self.debug:
+            #console.log(f'Loading language file {file_path}')
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 self.language_key = json.load(f)

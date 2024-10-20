@@ -1,21 +1,23 @@
 import os
+from xml.dom.pulldom import START_DOCUMENT
+import regex
 import psutil
 import asyncio
 import subprocess
 from hsl.core.java import Java
 from hsl.core.main import HSL
 from queue import Queue
-from rich.live import Live
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
 from threading import Thread
 from aioconsole import ainput
 from rich.console import Console
-
-
+START_SERVER = regex.compile(r'.*Starting minecraft server version.*')
+START_PORT = regex.compile(r'.*Starting Minecraft server on.*')
+PREPARE_LEVEL = regex.compile(r'.*Preparing level ".*"')
+PREPARE_SPAWN = regex.compile(r'.*Preparing start region for dimension.*')
+DONE_SERVER = regex.compile(r'.*Done \([^\)]+\)! For help, type "help"')
+OFFLINE_SERVER = regex.compile(r'.*The server will make no attempt to authenticate usernames.*')
 console = Console()
-
+output_counter = 0
 class Server(HSL):
     """
     Server Class
@@ -30,62 +32,44 @@ class Server(HSL):
         self.javaversion = javaversion
         self.maxRam = maxRam
         self.data = data
-    
-    async def get_process_info(self, pid: int):
-        try:
-            p = psutil.Process(pid)
-            
-            cpu_percent = p.cpu_percent()
-            
-            mem_info = p.memory_info()
-            rss = int(mem_info.rss / (1024 * 1024))
-            
-            memory_percent = int(p.memory_percent())
-            
-            return {
-                'pid': pid,
-                'cpu_percent': cpu_percent,
-                'memory_percent': memory_percent,
-                'memory': rss,
-            }
-        except psutil.NoSuchProcess:
-            return None
-    async def create_panel(self, table):
-        return Panel(table, title=self.name, expand=True)
 
     def pathJoin(self, path: str) -> str:
         return os.path.join(os.getcwd(), self.path, path)
-
+    async def analysis_output(self, output_text: str):
+        global output_counter
+        if output_counter == 0:
+            console.print('[bold magenta][HSL辅助日志分析][yellow]出现服务器日志输出...')
+        output_counter += 1
+        if regex.match(DONE_SERVER, output_text):
+            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器启动完成.')
+        if regex.match(START_SERVER, output_text):
+            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器启动中...')
+        if regex.match(START_PORT, output_text):
+            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器已启动, 正在监听端口.')
+        if regex.match(PREPARE_LEVEL, output_text):
+            console.print('[bold magenta][HSL辅助日志分析][yellow]正在准备地图...')
+        if regex.match(PREPARE_SPAWN, output_text):
+            console.print('[bold magenta][HSL辅助日志分析][yellow]正在准备出生点...')
+        if regex.match(OFFLINE_SERVER, output_text):
+            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器未启用正版验证，请注意安全性.')
     async def Output(self, process):
-        output_text = ''
-        
-        layout = Layout()
-        layout.split_column(Layout(name='monitor',ratio=3), Layout(name='output',ratio=6))
-        with Live(layout) as live:
+        linetext = ''
+        processed_lines = set()
+        console.print('[bold magenta][HSL辅助日志分析][yellow]开始启动服务器...')
+        while True:
             for line in iter(process.stdout.readline, b''):
-                table = Table(
-                "PID", "CPU %", "Memory %", "Memory", show_header=True, show_edge=True, header_style="bold magenta"
-                )
                 try:
-                    output_text += line.decode('utf-8').strip() + '\n'
+                    linetext = line.decode('utf-8').strip()
                 except UnicodeDecodeError:
-                    output_text += line.decode('gbk').strip() + '\n'                   
-                process_info = await self.get_process_info(process.pid)
-                if process_info:
-                    table.add_row(
-                        str(process_info['pid']),
-                        f"{process_info['cpu_percent']}%",
-                        f"{process_info['memory_percent']}%",
-                        f"{process_info['memory']} MB",
-                    )
-                text = '\n'.join(output_text.split('\n')[::-1])
-                layout['monitor'].update(Panel(table, title='Process Info'))
-                layout['output'].update(Panel(text, title='Console Output'))
-                live.update(layout)
-                del table
-                
-                if process.poll() is not None:
-                    break
+                    linetext = line.decode('gbk').strip()
+                if not linetext:
+                    continue
+                if linetext not in processed_lines:
+                    processed_lines.add(linetext)
+                    await self.analysis_output(linetext)
+                    console.print(linetext)
+            if process.poll() is not None:
+                break
         return
     def consoleOutput(self, process):
         loop = asyncio.new_event_loop()
@@ -139,7 +123,7 @@ class Server(HSL):
 
     def _build_run_command(self, javaexecPath, export=False):
         jvm_setting = self.data.get('jvm_setting', '')
-
+        console.print('[bold green]生成启动命令...')
         if self.type in ['vanilla', 'paper', 'fabric']:
             return " ".join([
                 javaexecPath,
@@ -161,7 +145,6 @@ class Server(HSL):
             )
 
             if jvm_setting:
-                console.log(f'[Debug]: Jvm Setting: {jvm_setting}')
                 return " ".join([
                     javaexecPath + jvm_setting,
                     "-Dfile.encoding=utf-8",
@@ -187,7 +170,6 @@ class Server(HSL):
             self.pathJoin(f"forge-{mcVersion}-{forgeVersion}.jar")
             if export else f"forge-{mcVersion}-{forgeVersion}.jar"
         ])
-
     async def run(self, path: str):
         startup_cmd = self.data.get('startup_cmd', '')
         if not startup_cmd:

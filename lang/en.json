@@ -1,6 +1,8 @@
 {
     "title": "HikariServerLauncher [bold blue]v{version} ",
     "title-debug": "[white]- [bold red]Debug Mode",
+    "window-title": "HikariServerLauncher v{version} ",
+    "window-title-debug": "- Debug Mode",
     "version": "[bold blue]You're running {HSL_NAME} version:[u]{version}[/u] minor versions:[u]{minor_version}[/u]",
     "set-language": "Language",
     "select-language": "Select the language:",
