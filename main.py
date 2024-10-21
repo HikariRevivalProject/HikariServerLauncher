@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import yaml
+import random
 import asyncio
 import noneprompt
 try:
@@ -22,7 +23,7 @@ from hsl.core.backup import Backup
 from hsl.core.sponsor import get_sponsor_list
 from rich.console import Console
 from hsl.gametypes import fabric, forge, paper, vanilla
-from hsl.utils.prompt import promptSelect, promptInput, promptConfirm
+from hsl.utils.prompt import promptSelect, promptInput, promptConfirm, promptSelectRed
 console = Console()
 HELP_URL = r'https://docs.qq.com/doc/DY3pnS1hFVm1uYWlp'
 QQGROUP_URL = r'https://qm.qq.com/q/bUTqWXnwje'
@@ -38,7 +39,7 @@ except NameError:
     pass
 class HSL_MAIN(HSL):
     def constants_init(self) -> None:
-        global OPTIONS_MENU, OPTIONS_MANAGE, OPTIONS_BACKUPS, OPTIONS_SETTINGS, OPTIONS_ADVANCED, OPTIONS_GAMETYPE, OPTIONS_JAVA, OPTIONS_JAVA_VERSION
+        global OPTIONS_MENU, OPTIONS_MANAGE, OPTIONS_BACKUPS, OPTIONS_SETTINGS, OPTIONS_ADVANCED, OPTIONS_GAMETYPE, OPTIONS_JAVA, OPTIONS_JAVA_VERSION, OPTIONS_ABOUT, OPTIONS_JOKE
         OPTIONS_ADVANCED = self.locale.trans_key(['cancel'])
         OPTIONS_SETTINGS = self.locale.trans_key(
             ['set-language', 'debug', 'mirror-first', 'run-on-system-startup', 'cancel']
@@ -50,13 +51,15 @@ class HSL_MAIN(HSL):
             ['backup-server', 'restore-server', 'delete-backup', 'cancel']
         )
         OPTIONS_MENU = self.locale.trans_key(
-            ['create-server', 'manage-server', 'delete-server', 'backup-center', 'settings', 'advanced-options', 'sponsor-list', 'exit']
+            ['create-server', 'manage-server', 'delete-server', 'backup-center', 'settings', 'advanced-options', 'about', 'exit']
         )
         OPTIONS_MANAGE = self.locale.trans_key(['start-server','open-server-folder','specific-configs','command-execute-before-server-start','custom-jvm-args','set-to-auto-run','export-start-script','edit-java-version','edit-max-ram'])#['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '取消']
         OPTIONS_JAVA = self.locale.trans_key(
             ['java-6', 'java-8', 'java-11', 'java-17', 'java-21', 'cancel']
         )
         OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
+        OPTIONS_ABOUT = self.locale.trans_key(['sponsor-list', 'do-not-touch'])
+        OPTIONS_JOKE = self.locale.trans_key(['yes', 'yes', 'yes', 'yes', 'yes'])
     def __init__(self):
         super().__init__()
         self.Workspace = Workspace()
@@ -415,10 +418,23 @@ class HSL_MAIN(HSL):
                 3: lambda: self.backups(),
                 4: lambda: self.setting(),
                 5: lambda: self.advanced_options(),
-                6: lambda: self.get_sponsor_list(),
+                6: lambda: self.about(),
                 7: lambda: self.exit()
             }
             await menu_methods[index]()
+    async def about(self):
+        console.rule(self.locale.trans_key('about'))
+        console.print(self.locale.trans_key('about-text'))
+        _index = await promptSelect(OPTIONS_ABOUT, self.locale.trans_key('about'))
+        about_methods: dict[int, Callable] = {
+            0: lambda:self.get_sponsor_list(),
+            1: lambda:self.jokes()
+        }
+        return await about_methods[_index]()
+    async def jokes(self):
+        console.clear()
+        await promptSelectRed(OPTIONS_JOKE, self.locale.trans_key(f'jokes-{random.randint(1,7)}'))
+        webbrowser.open('https://www.bilibili.com/video/BV1GJ411x7h7')
     async def get_sponsor_list(self):
         table = Table(title=self.locale.trans_key('sponsor'),show_header=False)
         sponsor_list = get_sponsor_list()

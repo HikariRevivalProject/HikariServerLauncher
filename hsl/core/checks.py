@@ -4,7 +4,7 @@ from rich.console import Console
 # SPCONFIGS_SOURCE = r'https://hsl.hikari.bond/spconfigs.json'
 VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 HSL_VERSION = 17
-HSL_VERSION_MINOR = 1
+HSL_VERSION_MINOR = 2
 
 console = Console()
 async def make_request(url: str, error_message: str) -> dict:

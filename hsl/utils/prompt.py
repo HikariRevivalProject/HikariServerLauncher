@@ -1,4 +1,5 @@
 from noneprompt import ListPrompt, InputPrompt, Choice
+from prompt_toolkit.styles import Style
 from hsl.core.locale import Locale
 import asyncio
 locale = Locale()
@@ -17,3 +18,8 @@ async def promptConfirm(prompt: str) -> bool:
     # confirm = await asyncio.gather(prompt_task)
     # return confirm[0]
     return bool(await promptSelect(OPTIONS_YN,prompt) == 0)
+async def promptSelectRed(options: list,prompt: str) -> int:
+    choices = [Choice(options[i],data=i) for i in range(len(options))]
+    prompt_task = asyncio.create_task(ListPrompt(prompt, question_mark='[???]', pointer='>', choices=choices,annotation=locale.trans_key('choice-prompt-annotation')).prompt_async(style=Style([("unselected", "#ff0000"), ("selected", "#ff0000")])))
+    select = await asyncio.gather(prompt_task)
+    return select[0].data

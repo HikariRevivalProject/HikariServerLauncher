@@ -16,7 +16,17 @@ PREPARE_LEVEL = regex.compile(r'.*Preparing level ".*"')
 PREPARE_SPAWN = regex.compile(r'.*Preparing start region for dimension.*')
 DONE_SERVER = regex.compile(r'.*Done \([^\)]+\)! For help, type "help"')
 OFFLINE_SERVER = regex.compile(r'.*The server will make no attempt to authenticate usernames.*')
-console = Console()
+STOP_SERVER = regex.compile(r'.*Stopping server.*')
+ASSIST_LOG_ANALYSIS_KEY = {
+    START_SERVER: 'server-starting',
+    START_PORT: 'server-bind-port',
+    PREPARE_LEVEL: 'server-preparing-level',
+    PREPARE_SPAWN: 'server-preparing-spawn',
+    DONE_SERVER: 'server-start-done',
+    OFFLINE_SERVER: 'server-offline-mode-enabled',
+    STOP_SERVER:'server-stopping'
+}
+console = Console(style='dim')
 output_counter = 0
 class Server(HSL):
     """
@@ -38,24 +48,16 @@ class Server(HSL):
     async def analysis_output(self, output_text: str):
         global output_counter
         if output_counter == 0:
-            console.print('[bold magenta][HSL辅助日志分析][yellow]出现服务器日志输出...')
+            console.print(self.locale.trans_key('hsl-assist-log-analyzer-text-prefix') + self.locale.trans_key('hsl-assist-log-analyzer-text-server-log-found'))
         output_counter += 1
-        if regex.match(DONE_SERVER, output_text):
-            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器启动完成.')
-        if regex.match(START_SERVER, output_text):
-            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器启动中...')
-        if regex.match(START_PORT, output_text):
-            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器已启动, 正在监听端口.')
-        if regex.match(PREPARE_LEVEL, output_text):
-            console.print('[bold magenta][HSL辅助日志分析][yellow]正在准备地图...')
-        if regex.match(PREPARE_SPAWN, output_text):
-            console.print('[bold magenta][HSL辅助日志分析][yellow]正在准备出生点...')
-        if regex.match(OFFLINE_SERVER, output_text):
-            console.print('[bold magenta][HSL辅助日志分析][yellow]服务器未启用正版验证，请注意安全性.')
+        for key, value in ASSIST_LOG_ANALYSIS_KEY.items():
+            if key.match(output_text):
+                console.print(self.locale.trans_key('hsl-assist-log-analyzer-text-prefix') + self.locale.trans_key(f'hsl-assist-log-analyzer-text-{value}'))
+                return
     async def Output(self, process):
         linetext = ''
         processed_lines = set()
-        console.print('[bold magenta][HSL辅助日志分析][yellow]开始启动服务器...')
+        console.print('[bold magenta][HSL][yellow]开始启动服务器...')
         while True:
             for line in iter(process.stdout.readline, b''):
                 try:
@@ -66,8 +68,9 @@ class Server(HSL):
                     continue
                 if linetext not in processed_lines:
                     processed_lines.add(linetext)
-                    await self.analysis_output(linetext)
+                    
                     console.print(linetext)
+                    await self.analysis_output(linetext)
             if process.poll() is not None:
                 break
         return
