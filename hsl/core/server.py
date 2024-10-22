@@ -1,15 +1,18 @@
 import os
-from xml.dom.pulldom import START_DOCUMENT
+from typing import Dict, Callable
 import regex
+import signal
 import psutil
 import asyncio
 import subprocess
 from hsl.core.java import Java
 from hsl.core.main import HSL
+from hsl.utils.prompt import promptSelect
 from queue import Queue
 from threading import Thread
 from aioconsole import ainput
 from rich.console import Console
+from rich.style import Style
 START_SERVER = regex.compile(r'.*Starting minecraft server version.*')
 START_PORT = regex.compile(r'.*Starting Minecraft server on.*')
 PREPARE_LEVEL = regex.compile(r'.*Preparing level ".*"')
@@ -26,6 +29,7 @@ ASSIST_LOG_ANALYSIS_KEY = {
     OFFLINE_SERVER: 'server-offline-mode-enabled',
     STOP_SERVER:'server-stopping'
 }
+FLAG_OUTPUT_ENABLE = True
 console = Console(style='dim')
 output_counter = 0
 class Server(HSL):
@@ -42,7 +46,11 @@ class Server(HSL):
         self.javaversion = javaversion
         self.maxRam = maxRam
         self.data = data
-
+        self.constants_init()
+    def constants_init(self):
+        global HSL_FUNCTION_MENU, PROCESS_FUNCTIONS
+        HSL_FUNCTION_MENU = self.locale.trans_key(['process-functions', 'cancel'])
+        PROCESS_FUNCTIONS = self.locale.trans_key(['process-functions-kill','process-functions-sigstop','process-functions-sigcont', 'cancel'])
     def pathJoin(self, path: str) -> str:
         return os.path.join(os.getcwd(), self.path, path)
     async def analysis_output(self, output_text: str):
@@ -51,15 +59,16 @@ class Server(HSL):
             console.print(self.locale.trans_key('hsl-assist-log-analyzer-text-prefix') + self.locale.trans_key('hsl-assist-log-analyzer-text-server-log-found'))
         output_counter += 1
         for key, value in ASSIST_LOG_ANALYSIS_KEY.items():
-            if key.match(output_text):
+            if key.match(output_text) and FLAG_OUTPUT_ENABLE:
                 console.print(self.locale.trans_key('hsl-assist-log-analyzer-text-prefix') + self.locale.trans_key(f'hsl-assist-log-analyzer-text-{value}'))
                 return
-    async def Output(self, process):
+    async def Output(self, process: subprocess.Popen):
+        global FLAG_OUTPUT_ENABLE
         linetext = ''
         processed_lines = set()
         console.print('[bold magenta][HSL][yellow]开始启动服务器...')
         while True:
-            for line in iter(process.stdout.readline, b''):
+            for line in iter(process.stdout.readline, b''): # type: ignore
                 try:
                     linetext = line.decode('utf-8').strip()
                 except UnicodeDecodeError:
@@ -68,41 +77,78 @@ class Server(HSL):
                     continue
                 if linetext not in processed_lines:
                     processed_lines.add(linetext)
-                    
-                    console.print(linetext)
+                    if FLAG_OUTPUT_ENABLE:
+                        console.print(linetext,markup=False,style=Style(bgcolor='#2c2c2c',color='white'))
                     await self.analysis_output(linetext)
             if process.poll() is not None:
                 break
         return
-    def consoleOutput(self, process):
+    def consoleOutput(self, process: subprocess.Popen):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.Output(process))
-    async def get_input(self, process, input_queue: Queue):
+    async def process_write_input(self, process: subprocess.Popen, input: str):
+        process.stdin.write(input.encode('utf-8') + b'\n') # type: ignore
+        process.stdin.flush() # type: ignore
+    async def get_input(self, process: subprocess.Popen, input_queue: Queue):
         while True:
             try:
-                command_input = await ainput(f'{self.name} >>> ')
-            except (KeyboardInterrupt,asyncio.exceptions.CancelledError):
-                console.log("已退出输入")
-                process.kill()
-                break
-            except EOFError:
+                command_input = await ainput(f'({self.name}) >>> ')
+            except (KeyboardInterrupt, EOFError):
                 console.log("已退出输入")
                 process.kill()
                 break
             except Exception as e:
                 console.log(f'输入错误: {e}')
                 continue
+            if command_input.strip().lower() == 'hsl':
+                global FLAG_OUTPUT_ENABLE
+                FLAG_OUTPUT_ENABLE = False
+                await self.hsl_function_menu(process)
+                FLAG_OUTPUT_ENABLE = True
+                continue
             input_queue.put(command_input)
             if input_queue.get() is None:
                 break
             try:
-                process.stdin.write(command_input.encode('utf-8') + b'\n')
-                process.stdin.flush()
+                await self.process_write_input(process, command_input)
             except OSError:
                 pass
         return
-    def consoleInput(self, process, input_queue: Queue):
+    async def hsl_function_menu(self, process: subprocess.Popen):
+        _index = await promptSelect(HSL_FUNCTION_MENU, self.locale.trans_key('hsl-shell-functions-text'))
+        hsl_functions:Dict[int,Callable] = {
+            0: lambda: self.process_functions(process),
+            len(HSL_FUNCTION_MENU) - 1: lambda: asyncio.sleep(0)
+        }
+        await hsl_functions[_index]()
+    async def process_functions(self,process: subprocess.Popen):
+        _index = await promptSelect(PROCESS_FUNCTIONS, self.locale.trans_key('process-functions'))
+        process_functions:Dict[int,Callable] = {
+            0: lambda: self.process_kill(process),
+            1: lambda: self.process_sigstop(process),
+            2: lambda: self.process_sigcont(process),
+            len(PROCESS_FUNCTIONS) - 1: lambda: asyncio.sleep(0)
+        }
+        await process_functions[_index]()
+    async def process_kill(self, process: subprocess.Popen):
+        process.kill()
+        console.print(self.locale.trans_key('process-functions-kill-success'))
+    async def process_sigstop(self, process: subprocess.Popen):
+        if os.name == 'nt':
+            _process = psutil.Process(process.pid)
+            _process.suspend()
+        else:
+            os.kill(process.pid, signal.SIGSTOP)
+        console.print(self.locale.trans_key('process-functions-sigstop-success'))
+    async def process_sigcont(self, process: subprocess.Popen):
+        if os.name == 'nt':
+            _process = psutil.Process(process.pid)
+            _process.resume()
+        else:
+            os.kill(process.pid, signal.SIGCONT)
+        console.print(self.locale.trans_key('process-functions-sigcont-success'))
+    def consoleInput(self, process: subprocess.Popen, input_queue: Queue):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.get_input(process, input_queue))
@@ -174,6 +220,11 @@ class Server(HSL):
             if export else f"forge-{mcVersion}-{forgeVersion}.jar"
         ])
     async def run(self, path: str):
+        if not self.config.shell_introduction_read:
+            console.print(self.locale.trans_key('hsl-shell-introduction'))
+            await promptSelect(self.locale.trans_key(['yes']), self.locale.trans_key('hsl-shell-introduction-prompt-select'))
+            self.config.shell_introduction_read = True
+            self.config.save()
         startup_cmd = self.data.get('startup_cmd', '')
         if not startup_cmd:
             console.log('[bold red]启动命令为空')
@@ -182,11 +233,13 @@ class Server(HSL):
                 subprocess.Popen(startup_cmd, cwd=self.path)
             except Exception as e:
                 console.log(f'[bold red]启动命令执行失败: {e}')
-        # if 'startup_cmd' in self.data:
-        #     if not self.data.get('startup_cmd', ''):
-        #         console.log('[bold red]启动命令为空')
-        #     else:
-        #         subprocess.Popen(self.data['startup_cmd'], cwd=self.path)
+        startup_cmd = self.data.get('startup_cmd', '')
+        if not startup_cmd:
+            console.log('[bold red]启动前执行命令为空')
+        else:
+            os.system(startup_cmd)
+            console.log(self.locale.trans_key('command-execute-before-server-ran'))
+            await asyncio.sleep(1)
 
         run_command = await self.gen_run_command(path)
 
@@ -203,7 +256,6 @@ class Server(HSL):
             stderr=subprocess.STDOUT,
         )
         input_queue = Queue()
-        
         #t1 = Thread(target=self.consoleOutput, args=(table, process, output_queue))
         t1 = Thread(target=self.consoleOutput, args=(process,))
         t2 = Thread(target=self.consoleInput, args=(process, input_queue))
@@ -212,9 +264,12 @@ class Server(HSL):
         t1.start()
         t2.start()
         
-
-        t1.join()
-        console.print('[bold green]键入Ctrl+C以退出控制台')
-        t2.join()
-        console.print('[bold green]控制台已退出')
+        try:
+            t1.join()
+            console.print('[bold green]键入Ctrl+C以退出控制台')
+            t2.join()
+            console.print('[bold green]控制台已退出')
+        except KeyboardInterrupt:
+            console.print('[bold red]已退出控制台')
+            process.kill()
         return

@@ -14,7 +14,7 @@ import javaproperties
 from hsl.utils import osfunc
 from hsl.core.server import Server
 from hsl.core.java import Java
-from hsl.core.checks import check_update
+from hsl.core.checks import check_update, send_counter
 from typing import Any, Callable, Optional
 from rich.table import Table
 from hsl.core.workspace import Workspace
@@ -53,7 +53,7 @@ class HSL_MAIN(HSL):
         OPTIONS_MENU = self.locale.trans_key(
             ['create-server', 'manage-server', 'delete-server', 'backup-center', 'settings', 'advanced-options', 'about', 'exit']
         )
-        OPTIONS_MANAGE = self.locale.trans_key(['start-server','open-server-folder','specific-configs','command-execute-before-server-start','custom-jvm-args','set-to-auto-run','export-start-script','edit-java-version','edit-max-ram'])#['启动服务器','打开服务器目录','特定配置',"启动前执行命令",'自定义JVM设置','设定为自动启动', '导出启动脚本', '更改Java版本', '更改最大内存', '取消']
+        OPTIONS_MANAGE = self.locale.trans_key(['start-server','open-server-folder','specific-configs','command-execute-before-server-start','custom-jvm-args','set-to-auto-run','export-start-script','edit-java-version','edit-max-ram','cancel'])
         OPTIONS_JAVA = self.locale.trans_key(
             ['java-6', 'java-8', 'java-11', 'java-17', 'java-21', 'cancel']
         )
@@ -406,11 +406,11 @@ class HSL_MAIN(HSL):
             window_title = self.locale.trans_key('window-title', version = str(self.version/10)) + (self.locale.trans_key('window-title-debug') if self.config.debug else '')
             console.set_window_title(window_title)
             console.print(self.locale.trans_key('version', HSL_NAME = HSL_NAME, version = str(self.version/10), minor_version = str(self.minor_version)))
-            try:
-                index = await promptSelect(OPTIONS_MENU, self.locale.trans_key('menu'))
-            except (KeyboardInterrupt, asyncio.CancelledError):
-                index = 7
             
+            try:
+                _index = await promptSelect(OPTIONS_MENU, self.locale.trans_key('menu'))
+            except (asyncio.CancelledError, KeyboardInterrupt):
+                continue
             menu_methods: dict[int, Callable] = {
                 0: lambda: self.create(),
                 1: lambda: self.manage(),
@@ -421,7 +421,7 @@ class HSL_MAIN(HSL):
                 6: lambda: self.about(),
                 7: lambda: self.exit()
             }
-            await menu_methods[index]()
+            await menu_methods[_index]()
     async def about(self):
         console.rule(self.locale.trans_key('about'))
         console.print(self.locale.trans_key('about-text'))
@@ -497,6 +497,7 @@ class HSL_MAIN(HSL):
 mainProgram = HSL_MAIN()
 async def main():
     task = asyncio.create_task(check_update())
+    counter_task = asyncio.create_task(send_counter())
     # isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
     if mainProgram.config.first_run:
         await mainProgram.welcome()
@@ -512,6 +513,7 @@ async def main():
             console.print(mainProgram.locale.trans_key('autorun-canceled'))
     await mainProgram.mainMenu()
     await task
+    await counter_task
     
 
 if __name__ == '__main__':

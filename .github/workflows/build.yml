@@ -119,6 +119,10 @@ jobs:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: Linux Build/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
           asset_name: HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
+      - name: ls
+        run: ls -R
+
+
       - name: Upload Release Asset(Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         id: upload_release_asset_win

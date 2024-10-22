@@ -15,6 +15,7 @@ class Config():
         self.autorun: str = ''
         self.debug: bool = False
         self.language: str = 'zh'
+        self.shell_introduction_read: bool = False
     def load(self):
         try:
             with open(CONFIG_FILE, 'r') as f:
