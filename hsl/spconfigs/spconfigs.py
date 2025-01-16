@@ -17,7 +17,7 @@ spconfigs = [
                 "tips": "只有你确定才要更改...",
                 "?tips": "！提示，若设置将会在用户编辑时显示",
                 "type": "int",
-                "?type": "! 可以为int str bool",
+                "?type": "! 可以为int str bool choice(见下)",
                 "danger": False,
                 "?danger": "是否为危险配置，如果是将会额外提示用户"
             },
@@ -128,6 +128,7 @@ spconfigs = [
                     "creative",
                     "adventure"
                 ],
+                "?choices": "选项列表，若为choice类型，该项必填",
                 "danger": True
             },
             {

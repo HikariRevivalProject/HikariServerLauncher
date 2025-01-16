@@ -58,8 +58,7 @@ class HSL_MAIN(HSL):
             ['java-6', 'java-8', 'java-11', 'java-17', 'java-21', 'cancel']
         )
         OPTIONS_JAVA_VERSION = ['6', '8', '11', '16', '17', '21']
-        OPTIONS_ABOUT = self.locale.trans_key(['sponsor-list', 'do-not-touch'])
-        OPTIONS_JOKE = self.locale.trans_key(['yes', 'yes', 'yes', 'yes', 'yes'])
+        OPTIONS_ABOUT = self.locale.trans_key(['sponsor-list'])
     def __init__(self):
         super().__init__()
         self.Workspace = Workspace()
@@ -427,14 +426,9 @@ class HSL_MAIN(HSL):
         console.print(self.locale.trans_key('about-text'))
         _index = await promptSelect(OPTIONS_ABOUT, self.locale.trans_key('about'))
         about_methods: dict[int, Callable] = {
-            0: lambda:self.get_sponsor_list(),
-            1: lambda:self.jokes()
+            0: lambda:self.get_sponsor_list()
         }
         return await about_methods[_index]()
-    async def jokes(self):
-        console.clear()
-        await promptSelectRed(OPTIONS_JOKE, self.locale.trans_key(f'jokes-{random.randint(1,7)}'))
-        webbrowser.open('https://www.bilibili.com/video/BV1GJ411x7h7')
     async def get_sponsor_list(self):
         table = Table(title=self.locale.trans_key('sponsor'),show_header=False)
         sponsor_list = get_sponsor_list()
@@ -462,6 +456,9 @@ class HSL_MAIN(HSL):
         await backup_methods[index]()
     async def create_backup(self):
         servers = await self.Workspace.getAll()
+        if not servers:
+            console.print(self.locale.trans_key('no-server-available'))
+            return
         server_index = await promptSelect([x.name for x in servers], self.locale.trans_key('backup-server-prompt-select'))
         server = servers[server_index]
         with console.status(self.locale.trans_key('backup-creating', servername=server.name)):
@@ -524,6 +521,6 @@ if __name__ == '__main__':
     except noneprompt.CancelledError:
         console.print(mainProgram.locale.trans_key('user-cancel-operate'))
     except Exception as e:
-        console.print(mainProgram.locale.trans_key('unknown-error-occur',e = str(e)))
+        console.print(mainProgram.locale.trans_key('unknown-error-occur', e = str(e)))
         if mainProgram.config.debug:
             console.print_exception()

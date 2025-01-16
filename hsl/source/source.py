@@ -69,16 +69,16 @@ source = {
             }
         ]},
         "paper":{
-            "latestVersionName": "1.21.1",
-            "experimentalVersionName": "1.21.1",
+            "latestVersionName": "1.21.4",
+            "experimentalVersionName": "1.21.4",
             "list":[
                 {
                     "type":"stable",
-                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/122/downloads/paper-1.21.1-122.jar"
+                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/114/downloads/paper-1.21.4-114.jar"
                 },
                 {
                     "type":"experimental",
-                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/122/downloads/paper-1.21.1-122.jar"
+                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/114/downloads/paper-1.21.4-114.jar"
                 }
             ]
         }
