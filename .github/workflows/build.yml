@@ -45,8 +45,8 @@ jobs:
         with:
           nuitka-version: main
           script-name: main.py
-          onefile: true
           mingw64: true
+          mode: onefile
           output-file: "HikariServerLauncher-${{ vars.VERSION }}.exe"
           windows-icon-from-ico: HSL.ico
           company-name: HikariRevivalProject
@@ -58,12 +58,11 @@ jobs:
       - name: Build executable(Linux)
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         uses: Nuitka/Nuitka-Action@main
-        
         with:
           nuitka-version: main
           script-name: main.py
-          onefile: true
           mingw64: true
+          mode: onefile
           output-file: "HikariServerLauncher-${{ vars.VERSION }}.bin"
           company-name: HikariRevivalProject
           product-name: HikariServerLauncher
@@ -72,12 +71,13 @@ jobs:
           copyright: "Copyright 2024 Hikari"
           include-data-files: lang/*.json=lang/
       - name: Upload executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os}} Build
+          name: ${{ runner.os }} Build Artifact
           path: |
             build/*.exe
             build/*.bin
+          compression-level: 9
   create_release:
     needs: ['build', 'tag_version']
     runs-on: ubuntu-20.04
