@@ -27,8 +27,8 @@ from hsl.utils.prompt import promptSelect, promptInput, promptConfirm, promptSel
 console = Console()
 HELP_URL = r'https://docs.qq.com/doc/DY3pnS1hFVm1uYWlp'
 QQGROUP_URL = r'https://qm.qq.com/q/bUTqWXnwje'
-OPTIONS_LANGUAGE = ["简体中文", "English"]
-OPTIONS_LANGUAGE_CODE = ["zh", "en"]
+OPTIONS_LANGUAGE = ["简体中文", "繁體中文","English"]
+OPTIONS_LANGUAGE_CODE = ["zh", "zh_tw", "en"]
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
@@ -97,7 +97,7 @@ class HSL_MAIN(HSL):
             return
 
         console.print(self.locale.trans_key('no-such-server'))
-        serverPath = await self.Workspace.create(server_name=serverName)
+        serverPath = await self.Workspace.create()
         server_setting = await self.install(serverName=serverName, serverPath=serverPath)
         if not server_setting:
             console.print(self.locale.trans_key('install-server-failed'))

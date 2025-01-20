@@ -2,6 +2,7 @@ from hsl.core.exceptions import NoSuchServerException
 from hsl.core.main import HSL
 import json
 import os
+import uuid
 import shutil
 from hsl.core.server import Server
 class Workspace(HSL):
@@ -24,8 +25,10 @@ class Workspace(HSL):
     def load(self):
         with open(self.path, 'r') as f:
             self.workspaces: list[dict] = json.load(f)
-    async def create(self, *, server_name: str):
-        serverPath = os.path.join(self.dir,server_name)
+    async def create(self):
+        #get random uuid
+        path = str(uuid.uuid4())
+        serverPath = os.path.join(self.dir, path)
         if not os.path.exists(serverPath):
             os.makedirs(serverPath)
         with open(os.path.join(serverPath,'eula.txt'), 'w') as f:

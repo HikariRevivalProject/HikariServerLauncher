@@ -79,14 +79,19 @@ async def download_installer(source: Source,mcVersion: str,version: str,path: st
             return await downloadfile(url, path)
     return False
 async def run_install(javaPath: str,path: str):
-    linux_prefix = './' if os.name == 'posix' else ''
-    cmd = f'{linux_prefix}{javaPath} -jar forge-installer.jar --installServer'
+    if os.name == 'posix':
+        javaPath = os.path.join(os.getcwd(), javaPath)
+    cmd = f'{javaPath} -jar forge-installer.jar --installServer'
     console.log(f'Run Forge Install Args: {cmd}')
-    with console.status('Forge 安装中，请稍作等待...', spinner='bouncingBar'):
-        Process = subprocess.Popen(args=cmd.split(" "),stdout=subprocess.PIPE,cwd=path)
-        while psutil.pid_exists(Process.pid):
-            for line in iter(Process.stdout.readline, b''): # type: ignore
-                console.print(line.decode('utf-8').strip())
+    Process = subprocess.Popen(args=cmd.split(" "),stdout=subprocess.PIPE,cwd=path)
+    _installing = True
+    while _installing:
+        for line in iter(Process.stdout.readline, b''): # type: ignore
+            ln = f'{Process.pid} {line.decode('utf-8').strip()}'
+            console.print(ln)
+            if 'The server installed successfully' in ln or psutil.pid_exists(Process.pid) == False:
+                _installing = False
+                
     return True
 async def install(self, serverName: str, serverPath: str, serverJarPath: str, data: dict) -> Any:
         serverType = 'forge'

@@ -106,8 +106,15 @@ jobs:
         os: [ubuntu-20.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Download executable
+      - name: Download executable (Linux)
         uses: actions/download-artifact@v3
+        with:
+          name: Linux Build Artifact
+      - name: Download executable (Windows)
+        uses: actions/download-artifact@v3
+        with:
+          name: Windows Build Artifact
+
       - name: ls
         run: ls -R
       - name: Upload Release Asset(Linux)
