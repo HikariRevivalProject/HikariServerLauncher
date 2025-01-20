@@ -120,7 +120,7 @@ jobs:
         with:
           asset_content_type: application/octet-stream
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: Linux Build/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
+          asset_path: ./Linux Build Artifact/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
           asset_name: HikariServerLauncher-Linux-${{ needs.tag_version.outputs.new_tag }}.bin
 
       - name: Upload Release Asset(Windows)
@@ -131,6 +131,6 @@ jobs:
         with:
           asset_content_type: application/octet-stream
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: Windows Build/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.exe
+          asset_path: ./Windows Build Artifact/HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.exe
           asset_name: HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.exe
         
