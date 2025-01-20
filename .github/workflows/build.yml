@@ -47,7 +47,7 @@ jobs:
           script-name: main.py
           mingw64: true
           mode: onefile
-          output-file: "HikariServerLauncher-${{ vars.VERSION }}.exe"
+          output-file: "HikariServerLauncher-v${{ vars.VERSION }}.exe"
           windows-icon-from-ico: HSL.ico
           company-name: HikariRevivalProject
           product-name: HikariServerLauncher
@@ -63,7 +63,7 @@ jobs:
           script-name: main.py
           mingw64: true
           mode: onefile
-          output-file: "HikariServerLauncher-${{ vars.VERSION }}.bin"
+          output-file: "HikariServerLauncher-v${{ vars.VERSION }}.bin"
           company-name: HikariRevivalProject
           product-name: HikariServerLauncher
           product-version: ${{ vars.VERSION }}
