@@ -101,15 +101,16 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
   upload_release_asset:
     needs: ['tag_version', 'create_release']
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
       - name: Download executable (Linux)
         uses: actions/download-artifact@v3
         with:
           name: Linux Build Artifact
+
       - name: Download executable (Windows)
         uses: actions/download-artifact@v3
         with:
@@ -117,8 +118,8 @@ jobs:
 
       - name: ls
         run: ls -R
+
       - name: Upload Release Asset(Linux)
-        if: ${{ matrix.os == 'ubuntu-20.04' }}
         id: upload_release_asset_linux
         uses: actions/upload-release-asset@v1
         env:
@@ -130,7 +131,6 @@ jobs:
           asset_name: HikariServerLauncher-${{ needs.tag_version.outputs.new_tag }}.bin
 
       - name: Upload Release Asset(Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
         id: upload_release_asset_win
         uses: actions/upload-release-asset@v1
         env:
