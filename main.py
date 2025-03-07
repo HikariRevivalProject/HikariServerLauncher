@@ -24,6 +24,8 @@ from hsl.core.sponsor import get_sponsor_list
 from rich.console import Console
 from hsl.gametypes import fabric, forge, paper, vanilla
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm, promptSelectRed
+from hsl.openfrp.user import OpenFrpUser
+from hsl.openfrp.tunnel import OpenFrpTunnel, OpenFrpTunnelShort
 console = Console()
 HELP_URL = r'https://docs.qq.com/doc/DY3pnS1hFVm1uYWlp'
 QQGROUP_URL = r'https://qm.qq.com/q/bUTqWXnwje'
@@ -511,7 +513,6 @@ async def main():
     await mainProgram.mainMenu()
     await task
     await counter_task
-    
 
 if __name__ == '__main__':
     try:

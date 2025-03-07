@@ -149,5 +149,14 @@
     "process-functions-sigstop-prompt-confirm": "Are you sure you want to suspend the process?",
     "process-functions-sigstop-success": "[bold green]The process has been suspended successfully.",
     "process-functions-sigcont-prompt-confirm": "Are you sure you want to resume the process?",
-    "process-functions-sigcont-success": "[bold green]The process has been resumed successfully."
+    "process-functions-sigcont-success": "[bold green]The process has been resumed successfully.",
+    "openfrp-get-authorization": "Request for Authorization successful: {auth}",
+    "openfrp-running-login":"[bold green]Doing OpenFrp login with name {username}...[/bold green]",
+    "openfrp-getting-user-info":"[bold green]Obtaining user information of {username}...[/bold green]",
+    "openfrp-failed-get-user-info":"[bold red]Failed to obtain user information.[bold red]",
+    "openfrp-authorization-may-not-expired":"[bold green]Authorization may not have expired, trying to use cache...[/bold green]",
+    "openfrp-timeout-login-again":"[bold green]The last time you logged in was more than 1 hour ago, and you are logging in again...[/bold green]",
+    "openfrp-login-failed":"[bold red]Login failed.[/bold red]",
+    "openfrp-user-info": "User information:\n    Username:{username}\n    Email:{email}\n    User group:{group}\n    Registration time:{registertime}\n    Remaining traffic:{traffic}MB\n    Real-name authentication:{realname}\nTunnel information:\n    Number of available tunnels:{proxies}个\n    Number of available tunnels:{used}个\n    Upstream bandwidth:{outLimit}Kbps\n    Downstream bandwidth:{inLimit}Kbps",
+    "openfrp-using-cache":"[bold green]Using cached username and password.[/bold green]"
 }

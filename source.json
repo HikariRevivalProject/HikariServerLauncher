@@ -1,0 +1,106 @@
+{
+    "version": 1,
+    "mc": {
+        "vanilla": {
+            "list": [{
+                "type": "bmclapi",
+                "versionList": "https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json",
+                "server": "https://bmclapi2.bangbang93.com/version/{version}/server"
+            }
+        ]},
+        "paper":{
+            "latestVersionName": "1.21.4",
+            "experimentalVersionName": "1.21.4",
+            "list":[
+                {
+                    "type":"stable",
+                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/190/downloads/paper-1.21.4-190.jar"
+                },
+                {
+                    "type":"experimental",
+                    "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/190/downloads/paper-1.21.4-190.jar"
+                }
+            ]
+        }
+    },
+    "forge": {
+        "list": [{
+            "type": "official",
+            "metadata": "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.json",
+            "download": "https://files.minecraftforge.net/maven/net/minecraftforge/forge/"
+        },
+        {
+            "type": "bmclapi",
+            "supportList": "https://bmclapi2.bangbang93.com/forge/minecraft",
+            "getByVersion": "https://bmclapi2.bangbang93.com/forge/minecraft/{version}",
+            "download": "https://bmclapi2.bangbang93.com/forge/download"
+        }
+    ]},
+    "neoforge": {
+        "list": [
+        {
+            "type": "official",
+            "getByVersion": "https://bmclapi2.bangbang93.com/neoforge/list/{version}",
+            "download": "https://bmclapi2.bangbang93.com/neoforge/version/{version}/download/installer.jar"
+        }
+    ]},
+    "fabric": {
+        "list": [{
+            "type": "official",
+            "supportList": "https://meta.fabricmc.net/v2/versions/game",
+            "loaderList": "https://meta.fabricmc.net/v2/versions/loader",
+            "installer": "https://meta.fabricmc.net/v2/versions/loader/{version}/{loader}/1.0.1/server/jar"
+    }]},
+    "java": {
+        "list": [
+            {
+                "type": "GloryGods",
+                "windows": {
+                    "6": "https://jdk.114914.xyz/jdk-6.zip",
+                    "8": "https://jdk.114914.xyz/jre1.8.0_341.zip",
+                    "11": "https://jdk.114914.xyz/jdk-11.zip",
+                    "16": "https://jdk.114914.xyz/jdk-16.zip",
+                    "17": "https://jdk.114914.xyz/jdk-17.zip",
+                    "21": "https://jdk.114914.xyz/jdk-21.zip"
+                },
+                "linux": {
+                    "6": "https://jdk.114914.xyz/jdk-6-linux.zip",
+                    "8": "https://jdk.114914.xyz/jdk8-linux.zip",
+                    "11": "https://jdk.114914.xyz/jdk11-linux.zip",
+                    "16": "https://jdk.114914.xyz/jdk-16-linux.zip",
+                    "17": "https://jdk.114914.xyz/jdk-17-linux.zip",
+                    "21": "https://jdk.114914.xyz/jdk-21-linux.zip"
+                }
+            },
+            {
+                "type": "lingyi",
+                "windows": {
+                    "6": "https://ipv4wp.axzzz.top:9503/f/5P48SV/java6.zip",
+                    "8": "https://ipv4wp.axzzz.top:9503/f/abdVU4/java8.zip",
+                    "11": "https://ipv4wp.axzzz.top:9503/f/3w5dCk/java11.zip",
+                    "16": "https://ipv4wp.axzzz.top:9503/f/lR7kS5/java16.zip",
+                    "17": "https://ipv4wp.axzzz.top:9503/f/OB3ai7/java17.zip",
+                    "21": "https://ipv4wp.axzzz.top:9503/f/dd1Mil/java21.zip"
+                },
+                "linux": {
+                    "6": "https://ipv4wp.axzzz.top:9503/f/XR3ZI4/java6lin.zip",
+                    "8": "https://ipv4wp.axzzz.top:9503/f/R234Fn/java8lin.zip",
+                    "11": "https://ipv4wp.axzzz.top:9503/f/AXMNh8/java11lin.zip",
+                    "16": "https://ipv4wp.axzzz.top:9503/f/nnDBUk/java16lin.zip",
+                    "17": "https://ipv4wp.axzzz.top:9503/f/Ve3AUW/java17lin.zip",
+                    "21": "https://ipv4wp.axzzz.top:9503/f/9jpEfk/java21lin.zip"
+                }
+            }
+    ]},
+    "openfrp": {
+        "pwdLogin": "https://account.naids.com/api/api/public/login",
+        "authCode": "https://account.naids.com/api/api/oauth2/authorize?response_type=code&redirect_uri=https://of-dev-api.bfsea.xyz/oauth_callback&client_id=openfrp",
+        "codeLogin": "https://of-dev-api.bfsea.xyz/oauth2/callback?code={code}",
+        "getUserInfo": "https://of-dev-api.bfsea.xyz/frp/api/getUserInfo",
+        "getUserProxies": "https://of-dev-api.bfsea.xyz/frp/api/getUserProxies",
+        "newProxy": "https://of-dev-api.bfsea.xyz/frp/api/newProxy",
+        "removeProxy": "https://of-dev-api.bfsea.xyz/frp/api/removeProxy",
+        "getNodeList": "https://of-dev-api.bfsea.xyz/frp/api/getNodeList",
+        "editProxy": "https://of-dev-api.bfsea.xyz/frp/api/editProxy"
+    }
+}

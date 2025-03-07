@@ -5,7 +5,7 @@ from rich.console import Console
 VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 SEND_COUNTER = r'http://a.hikari.bond:40654/count'
 HSL_VERSION = 17
-HSL_VERSION_MINOR = 5
+HSL_VERSION_MINOR = 6
 
 console = Console()
 async def make_request(url: str, error_message: str) -> dict:
@@ -17,7 +17,7 @@ async def make_request(url: str, error_message: str) -> dict:
                 return response.json()
             console.print(f'[bold red]{error_message}[/bold red]')
             return {}
-    except httpx.ConnectError:
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout):
         console.print(f'[bold red]{error_message}[/bold red]')
         return {}
 async def check_update():

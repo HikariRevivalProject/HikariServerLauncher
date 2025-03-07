@@ -142,5 +142,14 @@
     "process-functions-sigstop-prompt-confirm": "確定要暫停程序嗎？",
     "process-functions-sigstop-success": "[bold green]暫停程序成功。",
     "process-functions-sigcont-prompt-confirm": "確定要恢復程序嗎？",
-    "process-functions-sigcont-success": "[bold green]恢復程序成功。"
+    "process-functions-sigcont-success": "[bold green]恢復程序成功。",
+    "openfrp-get-authorization": "獲取到授權碼：{auth}",
+    "openfrp-running-login":"[bold green]正在以{username}登錄OpenFrp...[/bold green]",
+    "openfrp-getting-user-info":"[bold green]正在獲取{username}的OpenFrp用戶信息...[/bold green]",
+    "openfrp-failed-get-user-info":"[bold red]獲取用戶信息失敗。[bold red]",
+    "openfrp-authorization-may-not-expired":"[bold green]授權可能未過期，正在嘗試使用緩存...[/bold green]",
+    "openfrp-timeout-login-again":"[bold green]上次登錄超過一小時，正在重新登陸...[/bold green]",
+    "openfrp-login-failed":"[bold red]登陸失敗。[/bold red]",
+    "openfrp-user-info": "用戶信息：\n    用戶名：{username}\n    郵箱：{email}\n    用戶組：{group}\n    注冊時間：{registertime}\n    剩餘流量：{traffic}MB\n    實名認證：{realname}\n隧道信息：\n    可用隧道數量：{proxies}个\n    已用隧道數量：{used}个\n    上行帶寬：{outLimit}Kbps\n    下行帶寬：{inLimit}Kbps",
+    "openfrp-using-cache":"[bold green]使用了緩存中的賬戶名和密碼。[/bold green]"
 }

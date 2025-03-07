@@ -16,6 +16,8 @@ class Config():
         self.debug: bool = False
         self.language: str = 'zh'
         self.shell_introduction_read: bool = False
+        self.openfrp_username: str = ''
+        self.openfrp_password: str = ''
     def load(self):
         try:
             with open(CONFIG_FILE, 'r') as f:

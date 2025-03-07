@@ -150,5 +150,14 @@
     "process-functions-sigstop-prompt-confirm": "确定要挂起进程吗？",
     "process-functions-sigstop-success": "[bold green]挂起进程成功。",
     "process-functions-sigcont-prompt-confirm": "确定要恢复进程吗？",
-    "process-functions-sigcont-success": "[bold green]恢复进程成功。"
+    "process-functions-sigcont-success": "[bold green]恢复进程成功。",
+    "openfrp-get-authorization": "[bold green]已获取授权信息：{auth}[/bold green]",
+    "openfrp-running-login":"[bold green]正在以{username}登录OpenFrp...[/bold green]",
+    "openfrp-getting-user-info":"[bold green]正在获取{username}的OpenFrp用户信息...[/bold green]",
+    "openfrp-failed-get-user-info":"[bold red]获取用户信息失败。[bold red]",
+    "openfrp-authorization-may-not-expired":"[bold green]授权可能未过期，正在尝试使用缓存...[/bold green]",
+    "openfrp-timeout-login-again":"[bold green]上次登录超过1小时，正在重新登录...[/bold green]",
+    "openfrp-login-failed":"[bold red]登录失败。[/bold red]",
+    "openfrp-user-info": "用户信息：\n    用户名：{username}\n    邮箱：{email}\n    用户组：{group}\n    注册时间：{registertime}\n    剩余流量：{traffic}MB\n    实名认证：{realname}\n隧道信息：\n    可用隧道数量：{proxies}个\n    已用隧道数量：{used}个\n    上行带宽：{outLimit}Kbps\n    下行带宽：{inLimit}Kbps",
+    "openfrp-using-cache":"[bold green]使用缓存中的账户密码。[/bold green]"
 }
