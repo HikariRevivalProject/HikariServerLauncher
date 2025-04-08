@@ -21,6 +21,29 @@
                     "latest":"https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/190/downloads/paper-1.21.4-190.jar"
                 }
             ]
+        },
+        "april": {
+            "list": [{
+                "name": "2025-25w14craftmine",
+                "version": "1.21.5",
+                "link": "https://piston-data.mojang.com/v1/objects/4527a9019e37e001770787e4523b505f79cac4c5/server.jar"
+            }, {
+                "name": "2024-24w14potato",
+                "version": "1.20.5",
+                "link": "https://piston-data.mojang.com/v1/objects/846d3fe65b6dab3f8bf929a601e1f83d801d919c/server.jar"
+            }, {
+                "name": "2023-23w13a_or_b",
+                "version": "1.20.1",
+                "link": "https://piston-data.mojang.com/v1/objects/7a9b53ec7999ce01b73a74f3ab9e7e520b09f0eb/server.jar"
+            }, {
+                "name": "2022-22w13oneBlockAtATime",
+                "version": "1.18.2",
+                "link": "https://piston-data.mojang.com/v1/objects/5f48eea55c7fd1881d9c63835b15dfb5bbcd3a67/server.jar"
+            }, {
+                "name": "2020-20w14infinite",
+                "version": "1.16.1",
+                "link": "https://piston-data.mojang.com/v1/objects/c0711cd9608d1af3d6f05ac423dd8f4199780225/server.jar"
+            }]
         }
     },
     "forge": {

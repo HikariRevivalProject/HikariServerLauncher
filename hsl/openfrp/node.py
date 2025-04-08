@@ -71,5 +71,11 @@ async def getOpenFrpNodeList(auth: str, filter: bool = False, userGroup: int = 1
     except RequestFailedException:
         return None
     if filter:
-        return [node for node in nodeList.list if isinstance(node.port, int) and node.status == 200 and not node.fullyLoaded and node.protocolSupport.tcp and userGroup in node.getGroupLevels()]
+        return [node for node in nodeList.list 
+                if isinstance(node.port, int) 
+                and node.status == 200 
+                and not node.fullyLoaded # overloaded (why use this shit name)
+                and node.protocolSupport.tcp 
+                and userGroup in node.getGroupLevels()
+                ]
     return nodeList.list

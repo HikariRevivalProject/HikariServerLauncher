@@ -54,7 +54,8 @@ jobs:
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
           copyright: "Copyright 2025 HikariRevivalProject"
-          include-data-files: lang/*.json=lang/
+          include-data-dir: lang/=lang/
+          include-data-files: EULA.md=EULA.md
       - name: Build executable(Linux)
         if: ${{ matrix.os == 'ubuntu-20.04' }}
         uses: Nuitka/Nuitka-Action@main
@@ -69,7 +70,8 @@ jobs:
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
           copyright: "Copyright 2025 HikariRevivalProject"
-          include-data-files: lang/*.json=lang/
+          include-data-dir: lang/=lang/
+          include-data-files: EULA.md=EULA.md
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:

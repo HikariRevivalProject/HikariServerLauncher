@@ -1,8 +1,8 @@
 import os
 import re
 import sys
+import nuitka
 import yaml
-import random
 import asyncio
 import noneprompt
 try:
@@ -22,7 +22,7 @@ from hsl.core.main import HSL
 from hsl.core.backup import Backup
 from hsl.core.sponsor import get_sponsor_list
 from rich.console import Console
-from hsl.gametypes import fabric, forge, paper, vanilla
+from hsl.gametypes import fabric, forge, paper, vanilla, april
 from hsl.utils.prompt import promptSelect, promptInput, promptConfirm, promptSelectRed
 from hsl.openfrp.user import OpenFrpUser
 from hsl.openfrp.tunnel import OpenFrpTunnel, OpenFrpTunnelShort
@@ -34,6 +34,7 @@ OPTIONS_LANGUAGE_CODE = ["zh", "zh_tw", "en"]
 OS_MAXRAM = osfunc.getOSMaxRam() #max ram in MB
 HSL_NAME = 'Hikari Server Launcher'
 MAXRAM_PATTERN = re.compile(r'^\d+(\.\d+)?(M|G)$') # like 4G or 4096M
+BASE_PATH = os.path.dirname(sys.executable) if hasattr(nuitka, '__compiled__') else os.path.abspath(".")
 try:
     AUTORUN_REG_HKEY = reg.HKEY_CURRENT_USER # type: ignore
     AUTORUN_REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
@@ -47,7 +48,7 @@ class HSL_MAIN(HSL):
             ['set-language', 'debug', 'mirror-first', 'run-on-system-startup', 'cancel']
         )
         OPTIONS_GAMETYPE = self.locale.trans_key(
-            ['vanilla', 'paper', 'forge', 'fabric', 'cancel']
+            ['vanilla', 'paper', 'forge', 'fabric', 'april', 'cancel']
         )
         OPTIONS_BACKUPS = self.locale.trans_key(
             ['backup-server', 'restore-server', 'delete-backup', 'cancel']
@@ -147,6 +148,8 @@ class HSL_MAIN(HSL):
             return await forge.install(self, serverName, serverPath, serverJarPath, {})
         elif gameType == 3:
             return await fabric.install(self, serverName, serverPath, serverJarPath, {})
+        elif gameType == 4:
+            return await april.install(self, serverName, serverPath, serverJarPath, {})
         else:
             return False
         # install_methods: dict[int, Callable] = {
@@ -258,7 +261,7 @@ class HSL_MAIN(HSL):
 
     def get_nested_value(self, config: dict, keys: list) -> Any:
         for key in keys:
-            config = config.get(key, None)
+            config = config.get(key, None) # type: ignore
             if config is None:
                 return None
         return config
@@ -358,7 +361,7 @@ class HSL_MAIN(HSL):
         }
         await settings_methods[index]()
         self.config.save()
-    async def set_language(self):
+    async def set_language(self) -> None:
         lang = await promptSelect(OPTIONS_LANGUAGE, self.locale.trans_key('select-language'))
         self.locale.set_language(OPTIONS_LANGUAGE_CODE[lang])
         self.constants_init()
@@ -401,6 +404,10 @@ class HSL_MAIN(HSL):
         await advanced_methods[index]()
     
     async def mainMenu(self):
+        if not self.config.agree_eula:
+            if not await promptConfirm(self.locale.trans_key('agree-to-eula')): return
+            self.config.agree_eula = True
+            self.config.save()
         while True:
             title = self.locale.trans_key('title', version = str(self.version/10)) + (self.locale.trans_key('title-debug') if self.config.debug else '')
             console.rule(title)
@@ -494,7 +501,12 @@ class HSL_MAIN(HSL):
         return True
 
 mainProgram = HSL_MAIN()
-async def main():
+async def main() -> None:
+    eula_path = os.path.join(BASE_PATH, 'EULA.md')
+    eula_content = extract_eula(eula_path)
+    with open('EULA.md', "w", encoding='utf-8') as f:
+        f.seek(0)
+        f.write(eula_content)
     task = asyncio.create_task(check_update())
     counter_task = asyncio.create_task(send_counter())
     # isOutdated, new = mainProgram.flag_outdated, mainProgram.latest_version
@@ -505,7 +517,6 @@ async def main():
             loop = asyncio.get_event_loop()
             task = loop.create_task(mainProgram.autorun())
             await asyncio.wait_for(task, None)
-
         except (KeyboardInterrupt, asyncio.CancelledError):
             mainProgram.config.autorun = ''
             mainProgram.config.save()
@@ -513,6 +524,10 @@ async def main():
     await mainProgram.mainMenu()
     await task
     await counter_task
+
+def extract_eula(eula_path: str) -> str:
+    with open(eula_path, 'r', encoding='utf-8') as f:
+        return f.read()
 
 if __name__ == '__main__':
     try:

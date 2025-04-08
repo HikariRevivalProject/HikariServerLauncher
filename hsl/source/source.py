@@ -17,10 +17,19 @@ class Paper(BaseModel):
     latestVersionName: str
     experimentalVersionName: str
     list: List[PaperSource]
+    
+class AprilVersion(BaseModel):
+    version: str
+    name: str
+    link: str
+
+class April(BaseModel):
+    list: List[AprilVersion]
 
 class MC(BaseModel):
     vanilla: Vanilla
     paper: Paper
+    april: April
 
 class ForgeSource(BaseModel):
     type: str

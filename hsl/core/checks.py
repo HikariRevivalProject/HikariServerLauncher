@@ -5,7 +5,7 @@ from rich.console import Console
 VERSION_SOURCE = r'https://hsl.hikari.bond/hsl.json'
 SEND_COUNTER = r'http://a.hikari.bond:40654/count'
 HSL_VERSION = 17
-HSL_VERSION_MINOR = 6
+HSL_VERSION_MINOR = 7
 
 console = Console()
 async def make_request(url: str, error_message: str) -> dict:

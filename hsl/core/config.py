@@ -9,6 +9,7 @@ class Config():
     def __init__(self):
         self.first_run: bool = True
         self.use_mirror: bool = False
+        self.agree_eula: bool = False
         self.workspace_dir: str = 'workspace'
         self.workspace_file: str = 'workspace.json'
         self.backup_dir: str = 'backup'

@@ -26,3 +26,4 @@ nuitka-crash-report.xml
 *.bin
 TODO
 Dockerfile
+.VSCodeCounter/
