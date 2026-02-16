@@ -53,7 +53,7 @@ jobs:
           product-name: HikariServerLauncher
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
-          copyright: "Copyright 2025 HikariRevivalProject"
+          copyright: "Copyright 2025-2026 HikariRevivalProject"
           include-data-dir: lang/=lang/
           include-data-files: EULA.md=EULA.md
       - name: Build executable(Linux)
@@ -69,7 +69,7 @@ jobs:
           product-name: HikariServerLauncher
           product-version: ${{ vars.VERSION }}
           file-description: HikariServerLauncher
-          copyright: "Copyright 2025 HikariRevivalProject"
+          copyright: "Copyright 2025-2026 HikariRevivalProject"
           include-data-dir: lang/=lang/
           include-data-files: EULA.md=EULA.md
       - name: Upload executable
