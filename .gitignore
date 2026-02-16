@@ -28,7 +28,5 @@ TODO
 Dockerfile
 .VSCodeCounter/
 
-#Ignore vscode AI rules
-.github\instructions\codacy.instructions.md
 app.log
 .github/instructions/codacy.instructions.md
